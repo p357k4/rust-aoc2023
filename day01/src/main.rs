@@ -1,8 +1,7 @@
-use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 
-fn part1(path: &str) -> Result<(), Box<dyn std::error::Error>> {
+fn part1(path: &str) -> Result<u32, Box<dyn std::error::Error>> {
     let file = File::open(path)?;
     let reader = BufReader::new(file);
 
@@ -20,7 +19,7 @@ fn part1(path: &str) -> Result<(), Box<dyn std::error::Error>> {
     }
 
     println!("{}", sum);
-    Ok(())
+    Ok(sum)
 }
 
 fn part2(path: &str) -> Result<(), Box<dyn std::error::Error>> {
