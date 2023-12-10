@@ -177,87 +177,59 @@ fn part2(path: &str) -> Result<u32, Box<dyn std::error::Error>> {
 
     let longest = longest_path(&game, row_s, column_s);
 
-    for row in 0..game.board.num_rows() {
-        for column in 0..game.board.num_columns() {
-            let mut maybe = vec![];
-            let l = leakage(&mut game.board, &longest, &mut maybe, row, column);
+    let mut li = longest.iter();
 
-            if l {
-                for p in maybe {
-                    game.board.set(p.row, p.column, 'O');
-                }
-                continue
-            }
-            //
-            // for p in maybe {
-            //     game.board.set(p.row, p.column, 'I');
-            // }
-            //
-        }
+    let mut prev = li.next().unwrap();
+    while let Some(next) = li.next() {
+        // let row_diff = -(next.row as i32 - prev.row as i32);
+        // let column_diff = -(next.column as i32 - prev.column as i32);
+        let row_diff = next.row as i32 - prev.row as i32;
+        let column_diff = next.column as i32 - prev.column as i32;
+
+        let row_normal = - column_diff;
+        let column_normal = row_diff;
+
+        leak(&mut game.board, &longest, (next.row as i32 + row_normal) as usize, (next.column as i32 + column_normal) as usize);
+        prev = next;
     }
 
     let mut result = 0;
     for row in 0..game.board.num_rows() {
         for column in 0..game.board.num_columns() {
             let item = game.board.get(row, column).unwrap();
-            if *item == 'O' {
+            if *item == 'I' {
                 result += 1;
             }
         }
     }
 
-    result = game.board.num_rows() * game.board.num_columns() - result - longest.len();
-    Ok(result as u32)
+    Ok(result)
 }
 
-fn leakage(board: &mut Array2D<char>, p1: &Vec<Pipe>, maybe: &mut Vec<Pipe>, row: usize, column: usize) -> bool {
+fn leak(board: &mut Array2D<char>, p1: &Vec<Pipe>, row: usize, column: usize) {
+    if row == 0 || row >= board.num_rows() - 1 {
+        return
+    }
+
+    if column == 0 || column >= board.num_columns() - 1 {
+        return
+    }
+
     if p1.contains(&Pipe { row, column }) {
-        return false
-    }
-
-    if maybe.contains(&Pipe { row, column }) {
-        return false
-    }
-
-    if *board.get(row, column).unwrap() == 'O' {
-        return true
+        return
     }
 
     if *board.get(row, column).unwrap() == 'I' {
-        return false
+        return
     }
 
-    maybe.push(Pipe { row, column });
+    board.set(row, column, 'I');
 
-    if row == 0 || row == board.num_rows() - 1 {
-        return true
-    }
+    leak(board, p1, row - 1, column);
+    leak(board, p1, row + 1, column);
+    leak(board, p1, row, column - 1);
+    leak(board, p1, row, column + 1);
 
-    if column == 0 || column == board.num_columns() - 1 {
-        return true
-    }
-
-    let rm = leakage(board, p1, maybe, row - 1, column);
-    if rm {
-        return true
-    }
-
-    let rp = leakage(board, p1, maybe, row + 1, column);
-    if rp {
-        return true
-    }
-
-    let cm = leakage(board, p1, maybe, row, column - 1);
-    if cm {
-        return true
-    }
-
-    let cp = leakage(board, p1, maybe, row, column + 1);
-    if cp {
-        return true
-    }
-
-    false
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
