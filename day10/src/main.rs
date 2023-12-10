@@ -121,7 +121,7 @@ fn part1(path: &str) -> Result<u32, Box<dyn std::error::Error>> {
 
 fn longest_path(game: &Game, mut row_s: usize, mut column_s: usize) -> Vec<Pipe> {
     let mut max = 0;
-    let mut result = vec![];
+    let mut result = vec![Pipe { row: row_s, column: column_s }];
     if row_s > 0 {
         let path = path_length(&game, row_s - 1, column_s, South);
         if path.len() > max {
@@ -156,10 +156,6 @@ fn longest_path(game: &Game, mut row_s: usize, mut column_s: usize) -> Vec<Pipe>
     result
 }
 
-fn color(mut game: &Game, row: usize, column: usize) {
-    let item = game.board.get(row, column).unwrap();
-}
-
 fn part2(path: &str) -> Result<u32, Box<dyn std::error::Error>> {
     let mut game = load(path)?;
 
@@ -181,13 +177,13 @@ fn part2(path: &str) -> Result<u32, Box<dyn std::error::Error>> {
 
     let mut prev = longest.last().unwrap();
     for next in li {
-        let row_diff = -(next.row as i32 - prev.row as i32);
-        let column_diff = -(next.column as i32 - prev.column as i32);
-        // let row_diff = next.row as i32 - prev.row as i32;
-        // let column_diff = next.column as i32 - prev.column as i32;
+        // let row_diff = -(next.row as i32 - prev.row as i32);
+        // let column_diff = -(next.column as i32 - prev.column as i32);
+        let row_diff = next.row as i32 - prev.row as i32;
+        let column_diff = next.column as i32 - prev.column as i32;
 
-        let row_normal = - column_diff;
-        let column_normal = row_diff;
+        let row_normal = column_diff;
+        let column_normal = - row_diff;
 
         leak(&mut game.board, &longest, (next.row as i32 + row_normal) as usize, (next.column as i32 + column_normal) as usize);
         prev = next;
@@ -207,11 +203,11 @@ fn part2(path: &str) -> Result<u32, Box<dyn std::error::Error>> {
 }
 
 fn leak(board: &mut Array2D<char>, p1: &Vec<Pipe>, row: usize, column: usize) {
-    if row == 0 || row >= board.num_rows() - 1 {
+    if row == 0 || row == board.num_rows() - 1 {
         return
     }
 
-    if column == 0 || column >= board.num_columns() - 1 {
+    if column == 0 || column == board.num_columns() - 1 {
         return
     }
 
