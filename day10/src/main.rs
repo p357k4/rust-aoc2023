@@ -177,14 +177,14 @@ fn part2(path: &str) -> Result<u32, Box<dyn std::error::Error>> {
 
     let longest = longest_path(&game, row_s, column_s);
 
-    let mut li = longest.iter();
+    let li = longest.iter();
 
-    let mut prev = li.next().unwrap();
-    while let Some(next) = li.next() {
-        // let row_diff = -(next.row as i32 - prev.row as i32);
-        // let column_diff = -(next.column as i32 - prev.column as i32);
-        let row_diff = next.row as i32 - prev.row as i32;
-        let column_diff = next.column as i32 - prev.column as i32;
+    let mut prev = longest.last().unwrap();
+    for next in li {
+        let row_diff = -(next.row as i32 - prev.row as i32);
+        let column_diff = -(next.column as i32 - prev.column as i32);
+        // let row_diff = next.row as i32 - prev.row as i32;
+        // let column_diff = next.column as i32 - prev.column as i32;
 
         let row_normal = - column_diff;
         let column_normal = row_diff;
@@ -207,11 +207,11 @@ fn part2(path: &str) -> Result<u32, Box<dyn std::error::Error>> {
 }
 
 fn leak(board: &mut Array2D<char>, p1: &Vec<Pipe>, row: usize, column: usize) {
-    if row == 0 || row >= board.num_rows() - 1 {
+    if row == 0 || row == board.num_rows() - 1 {
         return
     }
 
-    if column == 0 || column >= board.num_columns() - 1 {
+    if column == 0 || column == board.num_columns() - 1 {
         return
     }
 
