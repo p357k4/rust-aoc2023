@@ -207,11 +207,11 @@ fn part2(path: &str) -> Result<u32, Box<dyn std::error::Error>> {
 }
 
 fn leak(board: &mut Array2D<char>, p1: &Vec<Pipe>, row: usize, column: usize) {
-    if row == 0 || row == board.num_rows() - 1 {
+    if row == 0 || row >= board.num_rows() - 1 {
         return
     }
 
-    if column == 0 || column == board.num_columns() - 1 {
+    if column == 0 || column >= board.num_columns() - 1 {
         return
     }
 
