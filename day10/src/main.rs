@@ -137,14 +137,14 @@ fn longest_path(game: &Game, mut row_s: usize, mut column_s: usize) -> Vec<Pipe>
         }
     }
     if column_s > 0 {
-        let path = path_length(&game, row_s, column_s - 1, West);
+        let path = path_length(&game, row_s, column_s - 1, East);
         if path.len() > max {
             max = path.len();
             result = path;
         }
     }
     if column_s < game.board.num_columns() - 1 {
-        let path = path_length(&game, row_s, column_s + 1, East);
+        let path = path_length(&game, row_s, column_s + 1, West);
         if path.len() > max {
             max = path.len();
             result = path;
@@ -186,6 +186,7 @@ fn part2(path: &str) -> Result<u32, Box<dyn std::error::Error>> {
         let column_normal = - row_diff;
 
         leak(&mut game.board, &longest, (next.row as i32 + row_normal) as usize, (next.column as i32 + column_normal) as usize);
+        leak(&mut game.board, &longest, (prev.row as i32 + row_normal) as usize, (prev.column as i32 + column_normal) as usize);
         prev = next;
     }
 
