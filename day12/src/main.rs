@@ -42,26 +42,31 @@ fn load(path: &str) -> Result<Input, Box<dyn std::error::Error>> {
 }
 
 fn fits(status: &Vec<char>, from: usize, group: u32) -> bool {
-    if from + group as usize > status.len() {
-        return false
+    let to = from + group as usize;
+    if to > status.len() {
+        return false;
     }
 
-    for index in from..from + group as usize {
+    for index in from..to {
         if status[index] == '.' {
             return false;
         }
     }
 
-    if ((from + group as usize) < status.len()) && status[from + group as usize] == '#' {
-        return false
+    if (to < status.len()) && (status[to] == '#') {
+        return false;
     }
 
     true
 }
 
-fn alternatives(status: &Vec<char>, from: usize, permutation: &Vec<&u32>, permutation_index: usize) -> u32 {
-    if permutation_index >= permutation.len() {
-        return 1;
+fn alternatives(status: &Vec<char>, from: usize, groups: &Vec<u32>, group_index: usize) -> u32 {
+    if group_index >= groups.len() {
+        return if status.iter().skip(from).all(|&c| c != '#') {
+            1
+        } else {
+            0
+        }
     }
 
     let mut counter = 0;
@@ -69,13 +74,13 @@ fn alternatives(status: &Vec<char>, from: usize, permutation: &Vec<&u32>, permut
     if let Some((position, &c)) = status.iter().skip(from).find_position(|&&c| c != '.') {
         let position_index = from + position;
         if c == '?' { // it may be '.'
-            let d = alternatives(status, position_index + 1, permutation, permutation_index);
+            let d = alternatives(status, position_index + 1, groups, group_index);
             counter += d;
         }
 
-        let &p = permutation[permutation_index];
+        let p = groups[group_index];
         if fits(status, position_index, p) {
-            let d = alternatives(status, position_index + p as usize + 1, permutation, permutation_index + 1);
+            let d = alternatives(status, position_index + p as usize + 1, groups, group_index + 1);
             counter += d;
         }
     }
@@ -87,18 +92,7 @@ fn part1(path: &str) -> Result<u32, Box<dyn std::error::Error>> {
     let game = load(path)?;
 
     let result = game.rows.iter().map(|row| {
-        let perm = row.groups.iter()
-            .permutations(row.groups.len())
-            .unique()
-            .collect_vec()
-            .iter().map(|v| v.iter().copied().collect_vec())
-            .collect_vec();
-
-        let d: u32 = perm.iter().map(|p| {
-            let d = alternatives(&row.status, 0, p, 0);
-            d
-        }).sum();
-        println!("{}", d);
+        let d = alternatives(&row.status, 0, &row.groups, 0);
         d
     }).sum();
 

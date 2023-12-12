@@ -11,7 +11,7 @@ mod tests {
     #[test]
     fn part1_full() {
         let result = part1("../data/day12_part1.txt").unwrap();
-        assert_eq!(result, 9233514);
+        assert_eq!(result, 6488);
     }
 
     #[test]
