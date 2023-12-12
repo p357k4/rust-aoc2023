@@ -100,10 +100,18 @@ fn part1(path: &str) -> Result<u32, Box<dyn std::error::Error>> {
 }
 
 
-fn part2(path: &str) -> Result<u64, Box<dyn std::error::Error>> {
+fn part2(path: &str) -> Result<u32, Box<dyn std::error::Error>> {
     let game = load(path)?;
 
-    let result = 0;
+    let result = game.rows.iter().map(|row| {
+        let sep = vec!['?'];
+
+        let unfolded_status = [row.status.clone(), sep.clone(), row.status.clone(), sep.clone(), row.status.clone(), sep.clone(), row.status.clone(), sep.clone(), row.status.clone()].concat();
+        let unfolded_group = row.groups.iter().cycle().take(5 * row.groups.len()).copied().collect_vec();
+        let d = alternatives(&unfolded_status, 0, &unfolded_group, 0);
+        d
+    }).sum();
+
     Ok(result)
 }
 

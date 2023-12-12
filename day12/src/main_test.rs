@@ -17,12 +17,12 @@ mod tests {
     #[test]
     fn part2_example1() {
         let result = part2("../example/day12_part1_example.txt").unwrap();
-        assert_eq!(result, 82000210);
+        assert_eq!(result, 525152);
     }
 
     #[test]
     fn part2_full() {
         let result = part2("../data/day12_part1.txt").unwrap();
-        assert_eq!(result, 363293506944);
+        assert_eq!(result, 0);
     }
 }
