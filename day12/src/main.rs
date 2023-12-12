@@ -42,60 +42,40 @@ fn load(path: &str) -> Result<Input, Box<dyn std::error::Error>> {
 }
 
 fn fits(status: &Vec<char>, from: usize, group: u32) -> bool {
-    let sub = status.iter().skip(from).take(group as usize).collect_vec();
-
-    if sub.len() < group as usize {
+    if from + group as usize > status.len() {
         return false
     }
 
-    for &c in sub {
-        if c == '.' {
+    for index in from..from + group as usize {
+        if status[index] == '.' {
             return false;
         }
     }
 
-    if let Some(&c) = status.get(from + group as usize) {
-        if c == '#' {
-            return false
-        }
+    if ((from + group as usize) < status.len()) && status[from + group as usize] == '#' {
+        return false
     }
 
     true
 }
 
-fn alternatives(status: &Vec<char>, from: usize, groups: Vec<u32>) -> u32 {
-    let mut counter = 0;
-
-
-    if from >= status.len() && groups.is_empty() {
-        return 1
+fn alternatives(status: &Vec<char>, from: usize, permutation: &Vec<&u32>, permutation_index: usize) -> u32 {
+    if permutation_index >= permutation.len() {
+        return 1;
     }
 
-    for position in from..status.len() {
-        let c = status[position];
-        if c == '.' {
-            continue;
-        }
+    let mut counter = 0;
 
+    if let Some((position, &c)) = status.iter().skip(from).find_position(|&&c| c != '.') {
+        let position_index = from + position;
         if c == '?' { // it may be '.'
-            let d = alternatives(status, position + 1, groups.clone());
+            let d = alternatives(status, position_index + 1, permutation, permutation_index);
             counter += d;
         }
 
-        for group_index in 0..groups.len() {
-            let r = ..group_index;
-
-
-            if !fits(status, position, groups[group_index]) {
-                continue;
-            }
-
-            let next_index = position + groups[group_index] as usize;
-
-            let q = group_index + 1..;
-
-            let next_group = groups[r].iter().chain(groups[q].iter()).copied().collect_vec();
-            let d = alternatives(status, next_index + 1, next_group);
+        let &p = permutation[permutation_index];
+        if fits(status, position_index, p) {
+            let d = alternatives(status, position_index + p as usize + 1, permutation, permutation_index + 1);
             counter += d;
         }
     }
@@ -106,18 +86,25 @@ fn alternatives(status: &Vec<char>, from: usize, groups: Vec<u32>) -> u32 {
 fn part1(path: &str) -> Result<u32, Box<dyn std::error::Error>> {
     let game = load(path)?;
 
-    let g = game.rows[0].groups.iter()
-        .permutations(game.rows[0].groups.len())
-        .unique()
-        .collect_vec();
+    let result = game.rows.iter().map(|row| {
+        let perm = row.groups.iter()
+            .permutations(row.groups.len())
+            .unique()
+            .collect_vec()
+            .iter().map(|v| v.iter().copied().collect_vec())
+            .collect_vec();
 
-    println!("{:?}", g);
-
-    // let result = game.rows.iter().map(|row| alternatives(&row.status, 0, row.groups.clone())).sum();
-    let result = alternatives(&game.rows[0].status, 0, game.rows[0].groups.clone());
+        let d: u32 = perm.iter().map(|p| {
+            let d = alternatives(&row.status, 0, p, 0);
+            d
+        }).sum();
+        println!("{}", d);
+        d
+    }).sum();
 
     Ok(result)
 }
+
 
 fn part2(path: &str) -> Result<u64, Box<dyn std::error::Error>> {
     let game = load(path)?;
