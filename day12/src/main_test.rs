@@ -5,7 +5,7 @@ mod tests {
     #[test]
     fn part1_example() {
         let result = part1("../example/day12_part1_example.txt").unwrap();
-        assert_eq!(result, 374);
+        assert_eq!(result, 21);
     }
 
     #[test]

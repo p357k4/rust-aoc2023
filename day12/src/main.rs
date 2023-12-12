@@ -12,7 +12,7 @@ use nom::sequence::tuple;
 
 #[derive(Clone, PartialEq)]
 struct Row {
-    status: String,
+    status: Vec<char>,
     groups: Vec<u32>,
 }
 
@@ -35,16 +35,87 @@ fn load(path: &str) -> Result<Input, Box<dyn std::error::Error>> {
 
     let rows = lines.iter().map(|line| {
         let (leftover, (status, _, groups)) = tuple((parse_string, complete::space1, parse_groups))(line.as_str()).unwrap();
-        Row { status: status.iter().join(""), groups }
+        Row { status, groups }
     }).collect_vec();
 
     Ok(Input { rows })
 }
 
-fn part1(path: &str) -> Result<u64, Box<dyn std::error::Error>> {
+fn fits(status: &Vec<char>, from: usize, group: u32) -> bool {
+    let sub = status.iter().skip(from).take(group as usize).collect_vec();
+
+    if sub.len() < group as usize {
+        return false
+    }
+
+    for &c in sub {
+        if c == '.' {
+            return false;
+        }
+    }
+
+    if let Some(&c) = status.get(from + group as usize) {
+        if c == '#' {
+            return false
+        }
+    }
+
+    true
+}
+
+fn alternatives(status: &Vec<char>, from: usize, groups: Vec<u32>) -> u32 {
+    let mut counter = 0;
+
+
+    if from >= status.len() && groups.is_empty() {
+        return 1
+    }
+
+    for position in from..status.len() {
+        let c = status[position];
+        if c == '.' {
+            continue;
+        }
+
+        if c == '?' { // it may be '.'
+            let d = alternatives(status, position + 1, groups.clone());
+            counter += d;
+        }
+
+        for group_index in 0..groups.len() {
+            let r = ..group_index;
+
+
+            if !fits(status, position, groups[group_index]) {
+                continue;
+            }
+
+            let next_index = position + groups[group_index] as usize;
+
+            let q = group_index + 1..;
+
+            let next_group = groups[r].iter().chain(groups[q].iter()).copied().collect_vec();
+            let d = alternatives(status, next_index + 1, next_group);
+            counter += d;
+        }
+    }
+
+    counter
+}
+
+fn part1(path: &str) -> Result<u32, Box<dyn std::error::Error>> {
     let game = load(path)?;
 
-    let result = 0;
+    let g = game.rows[0].groups.iter()
+        .permutations(game.rows[0].groups.len())
+        .unique()
+        .collect_vec();
+
+    println!("{:?}", g);
+
+    // let result = game.rows.iter().map(|row| alternatives(&row.status, 0, row.groups.clone())).sum();
+    let result = alternatives(&game.rows[0].status, 0, game.rows[0].groups.clone());
+
     Ok(result)
 }
 
