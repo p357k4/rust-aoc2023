@@ -1,15 +1,9 @@
 mod main_test;
 
-use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Read};
 use itertools::{Itertools};
-use nom::branch::alt;
-use nom::bytes::complete::tag;
-use nom::character::complete;
-use nom::IResult;
-use nom::multi::{many1, separated_list0};
-use nom::sequence::tuple;
+
 
 struct Block {
     rows: Vec<String>,
@@ -67,10 +61,54 @@ fn part1(path: &str) -> Result<usize, Box<dyn std::error::Error>> {
     Ok(result)
 }
 
-fn part2(path: &str) -> Result<u64, Box<dyn std::error::Error>> {
+fn part2(path: &str) -> Result<usize, Box<dyn std::error::Error>> {
     let input = load(path)?;
+    let mut vertical_sum = 0;
+    let mut horizontal_sum = 0;
 
-    let result = 0;
+    for block in input.blocks {
+        for shift in 1..block.rows.first().map(|v| v.len()).unwrap_or(0) {
+            let c: usize = block.rows
+                .iter()
+                .map(|v| {
+                    v.bytes()
+                        .take(shift)
+                        .rev()
+                        .zip(v.bytes().skip(shift))
+                        .filter(|(left, right)| {
+                            left != right
+                        })
+                        .count()
+                })
+                .sum();
+            if c == 1 {
+                vertical_sum += shift;
+                break
+            }
+        }
+
+        for shift in 1..block.rows.len() {
+            let c: usize = block.rows
+                .iter()
+                .take(shift)
+                .rev()
+                .zip(block.rows.iter().skip(shift))
+                .map(|(left, right)| {
+                    left.chars().zip(right.chars())
+                        .filter(|(left, right)| {
+                            left != right
+                        })
+                        .count()
+                })
+                .sum();
+            if c == 1 {
+                horizontal_sum += shift;
+                break
+            }
+        }
+    }
+
+    let result = horizontal_sum * 100 + vertical_sum;
 
     Ok(result)
 }
