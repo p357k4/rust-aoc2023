@@ -11,43 +11,28 @@ use nom::IResult;
 use nom::multi::{many1, separated_list0};
 use nom::sequence::tuple;
 
-struct Row {
-    notes: Vec<char>,
-}
-
 struct Block {
-    rows: Vec<Row>,
+    rows: Vec<String>,
 }
 
 struct Input {
     blocks: Vec<Block>,
 }
 
-fn parse_string(input: &str) -> IResult<&str, Vec<char>> {
-    many1(alt((complete::char('#'), complete::char('.'))))(input)
-}
-
-fn parse_groups(input: &str) -> IResult<&str, Vec<u64>> {
-    separated_list0(tag(","), complete::u64)(input)
-}
-
 fn load(path: &str) -> Result<Input, Box<dyn std::error::Error>> {
     let file = File::open(path)?;
     let mut reader = BufReader::new(file);
     let mut content = String::new();
-    reader.read_to_string(&mut content);
+    reader.read_to_string(&mut content).unwrap();
 
     let blocks_content = content.split("\n\n").collect_vec();
 
     let blocks = blocks_content.iter()
         .map(|&block_section| {
             let rows = block_section
-                .split("\n")
-                .map(|line| {
-                    let (leftover, notes) = parse_string(line).unwrap();
-                    Row { notes }
-                }
-                ).collect_vec();
+                .split('\n')
+                .map(|v| v.to_string())
+                .collect_vec();
             Block { rows }
         }
         )
@@ -56,17 +41,34 @@ fn load(path: &str) -> Result<Input, Box<dyn std::error::Error>> {
     Ok(Input { blocks })
 }
 
-fn part1(path: &str) -> Result<u64, Box<dyn std::error::Error>> {
-    let game = load(path)?;
+fn part1(path: &str) -> Result<usize, Box<dyn std::error::Error>> {
+    let input = load(path)?;
+    let mut vertical_sum = 0;
+    let mut horizontal_sum = 0;
 
-    let result = 0;
+    for block in input.blocks {
+        for shift in 1..block.rows.first().map(|v| v.len()).unwrap_or(0) {
+            let equal = block.rows.iter().all(|v| v.bytes().take(shift).rev().zip(v.bytes().skip(shift)).all(|(left, right)| left == right));
+            if equal {
+                vertical_sum += shift;
+            }
+        }
+
+        for shift in 1..block.rows.len() {
+            let equal = block.rows.iter().take(shift).rev().zip(block.rows.iter().skip(shift)).all(|(left, right)| left == right);
+            if equal {
+                horizontal_sum += shift;
+            }
+        }
+    }
+
+    let result = horizontal_sum * 100 + vertical_sum;
 
     Ok(result)
 }
 
-
 fn part2(path: &str) -> Result<u64, Box<dyn std::error::Error>> {
-    let game = load(path)?;
+    let input = load(path)?;
 
     let result = 0;
 
