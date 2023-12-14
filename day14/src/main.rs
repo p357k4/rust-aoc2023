@@ -1,5 +1,6 @@
 mod main_test;
 
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Read};
 use array2d::Array2D;
@@ -31,7 +32,7 @@ fn part1(path: &str) -> Result<usize, Box<dyn std::error::Error>> {
         for column in 0..num_columns {
             let element = input.tile.get(row,column).unwrap();
             if *element == 'O' {
-                slide(&mut input.tile, row, column);
+                slide_north(&mut input.tile, row, column);
             }
         }
     }
@@ -48,7 +49,7 @@ fn part1(path: &str) -> Result<usize, Box<dyn std::error::Error>> {
     Ok(result)
 }
 
-fn slide(tile: &mut Array2D<char>, row: usize, column: usize) {
+fn slide_north(tile: &mut Array2D<char>, row: usize, column: usize) {
     if row == 0 {
         return
     }
@@ -58,14 +59,120 @@ fn slide(tile: &mut Array2D<char>, row: usize, column: usize) {
     if *c == '.' {
         tile.set(row-1, column, 'O');
         tile.set(row, column, '.');
-        slide(tile, row - 1, column);
+        slide_north(tile, row - 1, column);
+    }
+}
+
+
+fn slide_south(tile: &mut Array2D<char>, row: usize, column: usize) {
+    if row == tile.num_rows() - 1 {
+        return
+    }
+
+    let next = row + 1;
+    let c = tile.get(next, column).unwrap();
+
+    if *c == '.' {
+        tile.set(next, column, 'O');
+        tile.set(row, column, '.');
+        slide_south(tile, next, column);
+    }
+}
+
+fn slide_east(tile: &mut Array2D<char>, row: usize, column: usize) {
+    if column == tile.num_columns() - 1 {
+        return
+    }
+
+    let next = column + 1;
+    let c = tile.get(row, next).unwrap();
+
+    if *c == '.' {
+        tile.set(row, next, 'O');
+        tile.set(row, column, '.');
+        slide_east(tile, row, next);
+    }
+}
+
+fn slide_west(tile: &mut Array2D<char>, row: usize, column: usize) {
+    if column == 0 {
+        return
+    }
+
+    let next = column - 1;
+    let c = tile.get(row, next).unwrap();
+
+    if *c == '.' {
+        tile.set(row, next, 'O');
+        tile.set(row, column, '.');
+        slide_west(tile, row, next);
     }
 }
 
 fn part2(path: &str) -> Result<usize, Box<dyn std::error::Error>> {
     let mut input = load(path)?;
 
-    let result = 0;
+    let num_rows = input.tile.num_rows();
+    let num_columns = input.tile.num_columns();
+
+    let mut result = 0;
+
+    let mut cache = HashMap::new();
+    for i in 0..1000000000 {
+        for row in 0..num_rows {
+            for column in 0..num_columns {
+                let element = input.tile.get(row,column).unwrap();
+                if *element == 'O' {
+                    slide_north(&mut input.tile, row, column);
+                }
+            }
+        }
+
+        for row in 0..num_rows {
+            for column in 0..num_columns {
+                let element = input.tile.get(row,column).unwrap();
+                if *element == 'O' {
+                    slide_west(&mut input.tile, row, column);
+                }
+            }
+        }
+
+        for row in 0..num_rows {
+            for column in 0..num_columns {
+                let element = input.tile.get(row,column).unwrap();
+                if *element == 'O' {
+                    slide_south(&mut input.tile, row, column);
+                }
+            }
+        }
+
+        for row in 0..num_rows {
+            for column in 0..num_columns {
+                let element = input.tile.get(row,column).unwrap();
+                if *element == 'O' {
+                    slide_east(&mut input.tile, row, column);
+                }
+            }
+        }
+
+        result = 0;
+        for row in 0..num_rows {
+            for column in 0..num_columns {
+                let element = input.tile.get(row,column).unwrap();
+                if *element == 'O' {
+                    result += num_rows - row;
+                }
+            }
+        }
+
+        if !cache.contains_key(&input.tile) {
+            cache.insert(input.tile.clone(), result);
+        } else {
+            println!("!")
+        }
+    }
+
+
     Ok(result)
 }
 
