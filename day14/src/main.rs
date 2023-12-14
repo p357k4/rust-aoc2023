@@ -30,7 +30,7 @@ fn part1(path: &str) -> Result<usize, Box<dyn std::error::Error>> {
 
     for row in 0..num_rows {
         for column in 0..num_columns {
-            let element = input.tile.get(row,column).unwrap();
+            let element = input.tile.get(row, column).unwrap();
             if *element == 'O' {
                 slide_north(&mut input.tile, row, column);
             }
@@ -39,7 +39,7 @@ fn part1(path: &str) -> Result<usize, Box<dyn std::error::Error>> {
 
     for row in 0..num_rows {
         for column in 0..num_columns {
-            let element = input.tile.get(row,column).unwrap();
+            let element = input.tile.get(row, column).unwrap();
             if *element == 'O' {
                 result += num_rows - row;
             }
@@ -51,13 +51,13 @@ fn part1(path: &str) -> Result<usize, Box<dyn std::error::Error>> {
 
 fn slide_north(tile: &mut Array2D<char>, row: usize, column: usize) {
     if row == 0 {
-        return
+        return;
     }
 
     let c = tile.get(row - 1, column).unwrap();
 
     if *c == '.' {
-        tile.set(row-1, column, 'O');
+        tile.set(row - 1, column, 'O');
         tile.set(row, column, '.');
         slide_north(tile, row - 1, column);
     }
@@ -66,7 +66,7 @@ fn slide_north(tile: &mut Array2D<char>, row: usize, column: usize) {
 
 fn slide_south(tile: &mut Array2D<char>, row: usize, column: usize) {
     if row == tile.num_rows() - 1 {
-        return
+        return;
     }
 
     let next = row + 1;
@@ -81,7 +81,7 @@ fn slide_south(tile: &mut Array2D<char>, row: usize, column: usize) {
 
 fn slide_east(tile: &mut Array2D<char>, row: usize, column: usize) {
     if column == tile.num_columns() - 1 {
-        return
+        return;
     }
 
     let next = column + 1;
@@ -96,7 +96,7 @@ fn slide_east(tile: &mut Array2D<char>, row: usize, column: usize) {
 
 fn slide_west(tile: &mut Array2D<char>, row: usize, column: usize) {
     if column == 0 {
-        return
+        return;
     }
 
     let next = column - 1;
@@ -118,10 +118,13 @@ fn part2(path: &str) -> Result<usize, Box<dyn std::error::Error>> {
     let mut result = 0;
 
     let mut cache = HashMap::new();
+    let mut tiles: Vec<Array2D<char>> = vec![];
+    let mut scores = vec![];
+
     for i in 0..1000000000 {
         for row in 0..num_rows {
             for column in 0..num_columns {
-                let element = input.tile.get(row,column).unwrap();
+                let element = input.tile.get(row, column).unwrap();
                 if *element == 'O' {
                     slide_north(&mut input.tile, row, column);
                 }
@@ -130,16 +133,16 @@ fn part2(path: &str) -> Result<usize, Box<dyn std::error::Error>> {
 
         for row in 0..num_rows {
             for column in 0..num_columns {
-                let element = input.tile.get(row,column).unwrap();
+                let element = input.tile.get(row, column).unwrap();
                 if *element == 'O' {
                     slide_west(&mut input.tile, row, column);
                 }
             }
         }
 
-        for row in 0..num_rows {
+        for row in (0..num_rows).rev() {
             for column in 0..num_columns {
-                let element = input.tile.get(row,column).unwrap();
+                let element = input.tile.get(row, column).unwrap();
                 if *element == 'O' {
                     slide_south(&mut input.tile, row, column);
                 }
@@ -147,33 +150,56 @@ fn part2(path: &str) -> Result<usize, Box<dyn std::error::Error>> {
         }
 
         for row in 0..num_rows {
-            for column in 0..num_columns {
-                let element = input.tile.get(row,column).unwrap();
+            for column in (0..num_columns).rev() {
+                let element = input.tile.get(row, column).unwrap();
                 if *element == 'O' {
                     slide_east(&mut input.tile, row, column);
                 }
             }
         }
 
-        result = 0;
-        for row in 0..num_rows {
-            for column in 0..num_columns {
-                let element = input.tile.get(row,column).unwrap();
-                if *element == 'O' {
-                    result += num_rows - row;
-                }
+        for (cycle, ct) in tiles.iter().enumerate() {
+            if ct.eq(&input.tile) {
+                println!("possible cycle at {i} {cycle}");
+                let sub = (1000000000 - i) % (i - cycle);
+                let g = score(tiles.get(cycle + sub - 1).unwrap());
+                println!("{g}");
+                return Ok(g);
             }
         }
 
+        result = score(&input.tile);
+        println!("{result}");
+
+        tiles.push(input.tile.clone());
+        scores.push(result);
+
         if !cache.contains_key(&input.tile) {
             cache.insert(input.tile.clone(), result);
-        } else {
-            println!("!")
         }
     }
 
 
     Ok(result)
+}
+
+fn score(tile: &Array2D<char>) -> usize {
+    let num_rows = tile.num_rows();
+
+    let num_columns = tile.num_columns();
+
+    let mut result = 0;
+
+    for row in 0..num_rows {
+        for column in 0..num_columns {
+            let element = tile.get(row, column).unwrap();
+            if *element == 'O' {
+                result += num_rows - row;
+            }
+        }
+    }
+
+    result
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {

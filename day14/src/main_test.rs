@@ -23,6 +23,6 @@ mod tests {
     #[test]
     fn part2_full() {
         let result = part2("../data/day14_part1.txt").unwrap();
-        assert_eq!(result, 0);
+        assert_eq!(result, 101010);
     }
 }
