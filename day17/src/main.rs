@@ -79,13 +79,13 @@ fn roll(grid: &Array2D<u32>, current_cost: &mut Array2D<u32>, p1: &Point, tail: 
             let mut new_tail= tail.clone();
             new_tail.insert(0, p1.clone());
 
-            let column_counter = new_tail.iter().take(2).filter(|p| p.column == next.column).count();
-            if column_counter == 2 {
+            let column_counter = new_tail.iter().take(3).filter(|p| p.column == next.column).count();
+            if column_counter == 3 {
                 continue
             }
 
-            let row_counter = new_tail.iter().take(2).filter(|p| p.row == next.row).count();
-            if row_counter == 2 {
+            let row_counter = new_tail.iter().take(3).filter(|p| p.row == next.row).count();
+            if row_counter == 3 {
                 continue
             }
 
@@ -97,7 +97,7 @@ fn roll(grid: &Array2D<u32>, current_cost: &mut Array2D<u32>, p1: &Point, tail: 
 fn part1(path: &str) -> Result<u32, Box<dyn std::error::Error>> {
     let input = load(path)?;
 
-    let mut current_cost = Array2D::filled_by_column_major(|| 1_000, input.grid.num_rows(), input.grid.num_columns());
+    let mut current_cost = Array2D::filled_by_column_major(|| 1_000_000_000, input.grid.num_rows(), input.grid.num_columns());
 
     let p1 = Point { row: 0, column: 0 };
     let tail = vec![];
