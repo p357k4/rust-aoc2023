@@ -1,5 +1,6 @@
 mod main_test;
 
+use std::env::join_paths;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Read};
 use array2d::Array2D;
@@ -47,7 +48,7 @@ enum Direction {
     West,
 }
 
-fn next(grid: &Array2D<u32>, p1: &Point, p2: &Point, p3: &Point, direction: Direction) -> Option<Point> {
+fn next(grid: &Array2D<u32>, p1: &Point, path: &Vec<Point>, direction: Direction) -> Option<Point> {
     let p0_option = match direction {
         Direction::North if p1.row > 0 => Some(Point { row: p1.row - 1, column: p1.column }),
         Direction::South if p1.row < grid.num_rows() - 1 => Some(Point { row: p1.row + 1, column: p1.column }),
@@ -57,43 +58,50 @@ fn next(grid: &Array2D<u32>, p1: &Point, p2: &Point, p3: &Point, direction: Dire
     };
 
     p0_option
-        .filter(|p0| !(p0.column == p1.column && p1.column == p2.column && p2.column == p3.column))
-        .filter(|p0| !(p0.row == p1.row && p1.row == p2.row && p2.row == p3.row))
+        .filter(|p0| !path.contains(p0))
+        .filter(|p0| path.iter().take(3).filter(|p| p.column == p0.column).count() < 3)
+        .filter(|p0| path.iter().take(3).filter(|p| p.row == p0.row).count() < 3)
 }
 
-fn roll(grid: &Array2D<u32>, current_cost: &mut Array2D<u32>, p1: &Point, p2: &Point, p3: &Point, path_cost: u32) {
+fn roll(grid: &Array2D<u32>, path_cost: u32, p1: &Point, path: Vec<Point>) {
+    if path_cost > 110 {
+        return
+    }
+
+    if p1.row == grid.num_rows() - 1 && p1.column == grid.num_columns() {
+        println!("{path_cost}");
+        return
+    }
+
     let new_cost = path_cost + *grid.get(p1.row, p1.column).unwrap();
-    if new_cost < *current_cost.get(p1.row, p1.column).unwrap() {
-        *current_cost.get_mut(p1.row, p1.column).unwrap() = path_cost;
 
-        let next_options_vec = vec![
-            next(grid, p1, p2, p3, Direction::South),
-            next(grid, p1, p2, p3, Direction::North),
-            next(grid, p1, p2, p3, Direction::East),
-            next(grid, p1, p2, p3, Direction::West),
-        ];
+    let next_options_vec = vec![
+        next(grid, p1, &path, Direction::South),
+        next(grid, p1, &path, Direction::North),
+        next(grid, p1, &path, Direction::East),
+        next(grid, p1, &path, Direction::West),
+    ];
 
-        for next in next_options_vec.iter().flatten() {
-            roll(grid, current_cost, next, p1, p2, new_cost);
-        }
+    for next in next_options_vec.iter().flatten() {
+        let mut new_path = path.clone();
+        new_path.insert(0, p1.clone());
+        roll(grid, new_cost, next, new_path);
     }
 }
 
 fn part1(path: &str) -> Result<u32, Box<dyn std::error::Error>> {
     let input = load(path)?;
 
-    let mut current_cost = Array2D::filled_by_column_major(|| 1_000_000_000, input.grid.num_rows(), input.grid.num_columns());
+    let mut cost = Array2D::filled_by_column_major(|| 1_000_000_000, input.grid.num_rows(), input.grid.num_columns());
 
-    let p1 = Point { row: 0, column: 1 };
-    let p2 = Point { row: 0, column: 0 };
-    let p3 = Point { row: input.grid.num_rows() + 1, column: input.grid.num_columns() + 1 };
-    roll(&input.grid, &mut current_cost, &p1, &p2, &p3, 0);
+    let p1 = Point { row: 0, column: 0 };
+    roll(&input.grid, 0, &p1, vec![]);
 
-    let result = *current_cost.get(current_cost.num_rows() - 1, current_cost.num_columns() - 1).unwrap();
+    let result = *cost.get(cost.num_rows() - 1, cost.num_columns() - 1).unwrap();
 
-    for i in 0..current_cost.num_rows() {
-        for j in 0..current_cost.num_columns() {
-            let e = current_cost.get(i, j).unwrap();
+    for i in 0..cost.num_rows() {
+        for j in 0..cost.num_columns() {
+            let e = cost.get(i, j).unwrap();
             print!("\t{e}");
         }
         println!();
