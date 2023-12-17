@@ -60,13 +60,13 @@ fn next(grid: &Array2D<u32>, p1: &Point, direction: Direction) -> Option<Point> 
 fn roll(grid: &Array2D<u32>, current_cost: &mut Array2D<u32>, p1: &Point, tail: &Vec<Point>, path_cost: u32) {
     let new_cost = path_cost + *grid.get(p1.row, p1.column).unwrap();
 
-    if p1.row == grid.num_rows() - 1 && p1.column == grid.num_columns() - 1 {
-        println!("{:?}", tail);
-        return
-    }
-
     if new_cost < *current_cost.get(p1.row, p1.column).unwrap() {
-        *current_cost.get_mut(p1.row, p1.column).unwrap() = path_cost;
+        *current_cost.get_mut(p1.row, p1.column).unwrap() = new_cost;
+
+        if p1.row == grid.num_rows() - 1 && p1.column == grid.num_columns() - 1 {
+            println!("{:?}", tail);
+            return
+        }
 
         let next_options_vec = vec![
             next(grid, p1, Direction::West),
@@ -79,10 +79,13 @@ fn roll(grid: &Array2D<u32>, current_cost: &mut Array2D<u32>, p1: &Point, tail: 
             let mut new_tail= tail.clone();
             new_tail.insert(0, p1.clone());
 
-            let column_counter = new_tail.iter().take(3).filter(|p| p.column == next.column).count();
-            let row_counter = new_tail.iter().take(3).filter(|p| p.row == next.row).count();
+            let column_counter = new_tail.iter().take(2).filter(|p| p.column == next.column).count();
+            if column_counter == 2 {
+                continue
+            }
 
-            if column_counter == 3 || row_counter == 3 {
+            let row_counter = new_tail.iter().take(2).filter(|p| p.row == next.row).count();
+            if row_counter == 2 {
                 continue
             }
 
