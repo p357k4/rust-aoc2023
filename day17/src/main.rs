@@ -10,7 +10,7 @@ use nom::character::complete::digit1;
 use nom::IResult;
 use nom::multi::many1;
 
-#[derive(Clone, Eq, PartialEq, Hash)]
+#[derive(Clone, Eq, PartialEq, Hash, Debug)]
 struct Point {
     row: usize,
     column: usize,
@@ -82,7 +82,7 @@ fn roll(grid: &Array2D<u32>, current_cost: &mut Array2D<u32>, p1: &Point, p2: &P
 fn part1(path: &str) -> Result<u32, Box<dyn std::error::Error>> {
     let input = load(path)?;
 
-    let mut current_cost = Array2D::filled_by_column_major(|| 1_000_000_000, input.grid.num_rows(), input.grid.num_columns());
+    let mut current_cost = Array2D::filled_by_column_major(|| 1_000, input.grid.num_rows(), input.grid.num_columns());
 
     let p1 = Point { row: 0, column: 1 };
     let p2 = Point { row: 0, column: 0 };
