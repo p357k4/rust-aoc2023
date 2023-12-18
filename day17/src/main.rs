@@ -73,7 +73,7 @@ fn roll(grid: &Array2D<u32>, cost: &mut Array2D<u32>, path_cost: u32, path: &Vec
     *cost.get_mut(p1.row, p1.column).unwrap() = new_cost;
 
     if p1.row == grid.num_rows() - 1 && p1.column == grid.num_columns() - 1 {
-        println!("{new_cost}");
+        // println!("{new_cost}");
         return
     }
 
