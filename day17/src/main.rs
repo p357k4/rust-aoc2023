@@ -38,7 +38,7 @@ enum Direction {
     West,
 }
 
-fn next(grid: &Array2D<u32>, path: &Vec<Point>, direction: Direction, depth: usize) -> Option<Point> {
+fn next(grid: &Array2D<u32>, path: &[Point], direction: Direction, depth: usize) -> Option<Point> {
     let p1 = &path[depth];
     let p0_option = match direction {
         Direction::North if p1.row > 0 => Some(Point { row: p1.row - 1, column: p1.column }),
