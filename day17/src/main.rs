@@ -86,14 +86,20 @@ fn roll(grid: &Array2D<u32>, cost: &mut Array2D<u32>, path_cost: u32, p1: &Point
             continue
         }
 
-        if path.len() > 0 {
-            if (p1.column == path[0].column && p1.column != next.column) || (p1.row == path[0].row && p1.row != next.row) {
-                if new_cost <= *cost.get(p1.row, p1.column).unwrap() {
-                    *cost.get_mut(p1.row, p1.column).unwrap() = new_cost
-                } else {
-                    continue
-                }
-            }
+        // if path.len() > 0 {
+        //     if (p1.column == path[0].column && p1.column != next.column) || (p1.row == path[0].row && p1.row != next.row) {
+        //         if new_cost <= *cost.get(p1.row, p1.column).unwrap() {
+        //             *cost.get_mut(p1.row, p1.column).unwrap() = new_cost
+        //         } else {
+        //             continue
+        //         }
+        //     }
+        // }
+
+        if new_cost <= *cost.get(p1.row, p1.column).unwrap() {
+            *cost.get_mut(p1.row, p1.column).unwrap() = new_cost
+        } else {
+            continue
         }
 
         if p1.row == grid.num_rows() - 1 && p1.column == grid.num_columns() - 1{
