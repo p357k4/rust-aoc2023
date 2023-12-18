@@ -66,6 +66,10 @@ fn cost(grid: &Array2D<u32>, path: &Path) -> u32 {
     path.trace.iter().map(|p| grid.get(p.row, p.column).unwrap()).sum()
 }
 
+fn dist(grid: &Array2D<u32>, p0: &Point) -> usize {
+    p0.row.abs_diff(grid.num_rows()) + p0.column.abs_diff(grid.num_columns())
+}
+
 fn roll(grid: &Array2D<u32>, paths: &Vec<Path>) -> Vec<Path> {
     let np = paths.iter().flat_map(|path| {
         let p0 = path.trace.first().unwrap();
@@ -83,9 +87,10 @@ fn roll(grid: &Array2D<u32>, paths: &Vec<Path>) -> Vec<Path> {
             next_options_vec
                 .iter()
                 .flatten()
-                .filter(|&next| !path.trace.contains(next))
-                .filter(|&next| path.trace.iter().take(3).filter(|p| p.column == next.column).count() < 3)
-                .filter(|&next| path.trace.iter().take(3).filter(|p| p.row == next.row).count() < 3)
+                .filter(|next| !path.trace.contains(next))
+                .filter(|next| path.trace.iter().take(3).filter(|p| p.column == next.column).count() < 3)
+                .filter(|next| path.trace.iter().take(3).filter(|p| p.row == next.row).count() < 3)
+                .filter(|next| dist(grid, next).abs_diff(path.trace.iter().map(|p| dist(grid, p)).min().unwrap_or_default()) < 2)
                 .map(|next| {
                     let mut trace = path.trace.clone();
                     trace.insert(0, next.clone());
