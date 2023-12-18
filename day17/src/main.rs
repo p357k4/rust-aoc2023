@@ -1,15 +1,9 @@
 mod main_test;
 
-use std::env::join_paths;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Read};
 use array2d::Array2D;
 use itertools::{Itertools};
-use nom::branch::alt;
-use nom::character::complete;
-use nom::character::complete::digit1;
-use nom::IResult;
-use nom::multi::many1;
 
 #[derive(Clone, Eq, PartialEq, Hash)]
 struct Point {
@@ -19,10 +13,6 @@ struct Point {
 
 struct Input {
     grid: Array2D<u32>,
-}
-
-fn parse_string(input: &str) -> IResult<&str, Vec<char>> {
-    many1(alt((complete::char('|'), complete::char('-'), complete::char('/'), complete::char('\\'), complete::char('.'))))(input)
 }
 
 fn load(path: &str) -> Result<Input, Box<dyn std::error::Error>> {
@@ -57,21 +47,22 @@ fn next(grid: &Array2D<u32>, p1: &Point, path: &[Point], direction: Direction) -
         _ => None
     };
 
+    let depth = path.len();
     p0_option
         .filter(|p0| !path.contains(p0))
-        .filter(|p0| path.iter().take(3).filter(|p| p.column == p0.column).count() < 3)
-        .filter(|p0| path.iter().take(3).filter(|p| p.row == p0.row).count() < 3)
+        .filter(|p0| depth < 3 || !(p0.column == p1.column && p0.column == path[depth - 1].column && p0.column == path[depth - 2].column && p0.column == path[depth - 3].column))
+        .filter(|p0| depth < 3 || !(p0.row == p1.row && p0.row == path[depth - 1].row && p0.row == path[depth - 2].row && p0.row == path[depth - 3].row))
 }
 
 fn roll(grid: &Array2D<u32>, cost: &mut Array2D<u32>, path_cost: u32, p1: &Point, path: Vec<Point>) {
     let new_cost = path_cost + *grid.get(p1.row, p1.column).unwrap();
 
     if path.len() > 450 {
-        return
+        return;
     }
 
     if new_cost > *cost.get(grid.num_rows() - 1, grid.num_columns() - 1).unwrap() {
-        return
+        return;
     }
 
     let next_options_vec = [
@@ -83,7 +74,7 @@ fn roll(grid: &Array2D<u32>, cost: &mut Array2D<u32>, path_cost: u32, p1: &Point
 
     for next in next_options_vec.iter().flatten() {
         if path.contains(next) {
-            continue
+            continue;
         }
 
         // if path.len() > 0 {
@@ -99,16 +90,16 @@ fn roll(grid: &Array2D<u32>, cost: &mut Array2D<u32>, path_cost: u32, p1: &Point
         if new_cost <= *cost.get(p1.row, p1.column).unwrap() {
             *cost.get_mut(p1.row, p1.column).unwrap() = new_cost
         } else {
-            continue
+            continue;
         }
 
-        if p1.row == grid.num_rows() - 1 && p1.column == grid.num_columns() - 1{
+        if p1.row == grid.num_rows() - 1 && p1.column == grid.num_columns() - 1 {
             println!("{new_cost}");
-            continue
+            continue;
         }
 
         let mut new_path = path.clone();
-        new_path.insert(0, p1.clone());
+        new_path.push(p1.clone());
 
         roll(grid, cost, new_cost, next, new_path);
     }
