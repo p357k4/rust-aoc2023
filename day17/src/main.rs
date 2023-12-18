@@ -59,7 +59,7 @@ fn roll(grid: &Array2D<u32>, cost: &mut Array2D<u32>, path_cost: u32, path: &Vec
         return;
     }
 
-    let p1 = &path[path.len() - 1];
+    let p1 = &path[depth];
 
     let new_cost = path_cost + *grid.get(p1.row, p1.column).unwrap();
     if new_cost > *cost.get(p1.row, p1.column).unwrap() {
