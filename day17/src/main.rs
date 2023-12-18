@@ -5,7 +5,7 @@ use std::io::{BufRead, BufReader, Read};
 use array2d::Array2D;
 use itertools::{Itertools};
 
-#[derive(Clone, Eq, PartialEq, Hash)]
+#[derive(Clone, Eq, PartialEq, Hash, Copy)]
 struct Point {
     row: usize,
     column: usize,
@@ -54,8 +54,8 @@ fn next(grid: &Array2D<u32>, path: &[Point], direction: Direction, depth: usize)
         .filter(|p0| depth < 3 || !(p0.row == path[depth].row && p0.row == path[depth - 1].row && p0.row == path[depth - 2].row && p0.row == path[depth - 3].row))
 }
 
-fn roll(grid: &Array2D<u32>, cost: &mut Array2D<u32>, path_cost: u32, path: &Vec<Point>, depth: usize) {
-    if path.len() > 450 {
+fn roll(grid: &Array2D<u32>, cost: &mut Array2D<u32>, path_cost: u32, path: &mut [Point], depth: usize) {
+    if depth > 450 {
         return;
     }
 
@@ -99,20 +99,20 @@ fn roll(grid: &Array2D<u32>, cost: &mut Array2D<u32>, path_cost: u32, path: &Vec
         //     }
         // }
 
-        let mut new_path = path.clone();
-        new_path.push(next.clone());
+        path[depth + 1] = *next;
 
-        roll(grid, cost, new_cost, &new_path, depth + 1);
+        roll(grid, cost, new_cost, path, depth + 1);
     }
 }
 
 fn part1(path: &str) -> Result<u32, Box<dyn std::error::Error>> {
     let input = load(path)?;
 
-    let mut cost = Array2D::filled_by_column_major(|| 1_000_000_000, input.grid.num_rows(), input.grid.num_columns());
+    let mut cost = Array2D::filled_by_column_major(|| 1_000_000, input.grid.num_rows(), input.grid.num_columns());
 
     let p1 = Point { row: 0, column: 0 };
-    roll(&input.grid, &mut cost, 0, &vec![p1], 0);
+    let mut path = [p1; 500];
+    roll(&input.grid, &mut cost, 0, &mut path, 0);
 
     let result = *cost.get(cost.num_rows() - 1, cost.num_columns() - 1).unwrap() - *input.grid.get(0, 0).unwrap();
 
