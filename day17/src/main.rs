@@ -38,8 +38,7 @@ enum Direction {
     West,
 }
 
-fn next(grid: &Array2D<u32>, path: &Vec<Point>, direction: Direction) -> Option<Point> {
-    let depth = path.len() - 1;
+fn next(grid: &Array2D<u32>, path: &Vec<Point>, direction: Direction, depth: usize) -> Option<Point> {
     let p1 = &path[depth];
     let p0_option = match direction {
         Direction::North if p1.row > 0 => Some(Point { row: p1.row - 1, column: p1.column }),
@@ -55,25 +54,34 @@ fn next(grid: &Array2D<u32>, path: &Vec<Point>, direction: Direction) -> Option<
         .filter(|p0| depth < 3 || !(p0.row == path[depth].row && p0.row == path[depth - 1].row && p0.row == path[depth - 2].row && p0.row == path[depth - 3].row))
 }
 
-fn roll(grid: &Array2D<u32>, cost: &mut Array2D<u32>, path_cost: u32, p1: &Point, path: &Vec<Point>) {
-    let new_cost = path_cost + *grid.get(p1.row, p1.column).unwrap();
-
+fn roll(grid: &Array2D<u32>, cost: &mut Array2D<u32>, path_cost: u32, path: &Vec<Point>, depth: usize) {
     if path.len() > 450 {
         return;
+    }
+
+    let p1 = &path[path.len() - 1];
+
+    let new_cost = path_cost + *grid.get(p1.row, p1.column).unwrap();
+    if new_cost > *cost.get(p1.row, p1.column).unwrap() {
+        return
     }
 
     if new_cost > *cost.get(grid.num_rows() - 1, grid.num_columns() - 1).unwrap() {
         return;
     }
 
-    let mut new_path = path.clone();
-    new_path.push(p1.clone());
+    *cost.get_mut(p1.row, p1.column).unwrap() = new_cost;
+
+    if p1.row == grid.num_rows() - 1 && p1.column == grid.num_columns() - 1 {
+        println!("{new_cost}");
+        return
+    }
 
     let next_options_vec = [
-        next(grid, &new_path, Direction::South),
-        next(grid, &new_path, Direction::North),
-        next(grid, &new_path, Direction::East),
-        next(grid, &new_path, Direction::West),
+        next(grid, path, Direction::South, depth),
+        next(grid, path, Direction::North, depth),
+        next(grid, path, Direction::East, depth),
+        next(grid, path, Direction::West, depth),
     ];
 
     for next in next_options_vec.iter().flatten() {
@@ -91,18 +99,10 @@ fn roll(grid: &Array2D<u32>, cost: &mut Array2D<u32>, path_cost: u32, p1: &Point
         //     }
         // }
 
-        if new_cost <= *cost.get(p1.row, p1.column).unwrap() {
-            *cost.get_mut(p1.row, p1.column).unwrap() = new_cost
-        } else {
-            continue;
-        }
+        let mut new_path = path.clone();
+        new_path.push(next.clone());
 
-        if p1.row == grid.num_rows() - 1 && p1.column == grid.num_columns() - 1 {
-            println!("{new_cost}");
-            continue;
-        }
-
-        roll(grid, cost, new_cost, next, &new_path);
+        roll(grid, cost, new_cost, &new_path, depth + 1);
     }
 }
 
@@ -112,7 +112,7 @@ fn part1(path: &str) -> Result<u32, Box<dyn std::error::Error>> {
     let mut cost = Array2D::filled_by_column_major(|| 1_000_000_000, input.grid.num_rows(), input.grid.num_columns());
 
     let p1 = Point { row: 0, column: 0 };
-    roll(&input.grid, &mut cost, 0, &p1, &vec![]);
+    roll(&input.grid, &mut cost, 0, &vec![p1], 0);
 
     let result = *cost.get(cost.num_rows() - 1, cost.num_columns() - 1).unwrap() - *input.grid.get(0, 0).unwrap();
 
