@@ -18,6 +18,17 @@ struct Part {
     v: HashMap<String, u32>,
 }
 
+#[derive(Clone, Copy)]
+struct Range {
+    low: u32,
+    high: u32,
+}
+
+#[derive(Clone)]
+struct RangePart {
+    v: HashMap<String, Range>,
+}
+
 struct Condition {
     category: String,
     operator: String,
@@ -169,11 +180,89 @@ fn analyze(workflows: &Vec<Workflow>, part: &Part, name: &String) -> bool {
     }
 }
 
-fn part2(path: &str) -> Result<usize, Box<dyn std::error::Error>> {
+fn part2(path: &str) -> Result<u128, Box<dyn std::error::Error>> {
     let input = load(path)?;
 
-    let result = 0;
+    let v = HashMap::from([
+        ("x".to_string(), Range{ low: 1, high: 4000 }),
+        ("m".to_string(), Range{ low: 1, high: 4000 }),
+        ("a".to_string(), Range{ low: 1, high: 4000 }),
+        ("s".to_string(), Range{ low: 1, high: 4000 }),
+    ]);
+    let part = RangePart{ v };
+
+    let result = analyze2(&input.workflows, part, &"in".into());
     Ok(result)
+}
+
+
+fn analyze2(workflows: &Vec<Workflow>, part: RangePart, name: &String) -> u128 {
+    if name == "A" {
+        return part.v.values().fold(1u128, |acc, r| {
+            acc * ((r.high - r.low + 1) as u128)
+        })
+    }
+
+    if name == "R" {
+        return 0
+    }
+
+    let Some(workflow) = workflows.iter().find_or_first(|w| w.name == *name) else { todo!() };
+
+    for rule in &workflow.rules {
+        match &rule.condition {
+            Some(condition) if condition.operator == ">" => {
+                if part.v[&condition.category].low > condition.value  {
+                    // whole part meets condition
+                    return analyze2(workflows, part, &rule.to)
+                } else if part.v[&condition.category].high < condition.value {
+                    // whole part does not meet condition
+                    ()
+                } else {
+                    let low = Range {high:condition.value, ..part.v[&condition.category]};
+                    let high = Range {low:condition.value + 1, ..part.v[&condition.category]};
+
+                    let mut low_part = part.clone();
+                    let mut high_part = part.clone();
+                    low_part.v.insert(condition.category.clone(), low);
+                    high_part.v.insert(condition.category.clone(), high);
+
+                    return analyze2(workflows, high_part, &rule.to) + analyze2(workflows, low_part, name)
+                }
+            },
+
+            Some(condition) if condition.operator == "<"  => {
+                if part.v[&condition.category].high < condition.value  {
+                    // whole part meets condition
+                    return analyze2(workflows, part, &rule.to)
+                } else if part.v[&condition.category].low > condition.value {
+                    // whole part does not meet condition
+                    ()
+                } else {
+                    let low = Range {high:condition.value, ..part.v[&condition.category]};
+                    let high = Range {low:condition.value + 1, ..part.v[&condition.category]};
+
+                    let mut low_part = part.clone();
+                    let mut high_part = part.clone();
+                    low_part.v.insert(condition.category.clone(), low);
+                    high_part.v.insert(condition.category.clone(), high);
+
+                    return analyze2(workflows, low_part, &rule.to) + analyze2(workflows, high_part, name)
+                }
+            },
+
+            Some(_) => {
+                todo!()
+            },
+
+            None => {
+                return analyze2(workflows, part, &rule.to)
+            },
+        }
+    }
+
+
+    todo!()
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
