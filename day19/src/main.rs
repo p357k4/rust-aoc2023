@@ -215,7 +215,7 @@ fn analyze2(workflows: &Vec<Workflow>, part: RangePart, name: &String) -> u128 {
                 if part.v[&condition.category].low > condition.value  {
                     // whole part meets condition
                     return analyze2(workflows, part, &rule.to)
-                } else if part.v[&condition.category].high < condition.value {
+                } else if part.v[&condition.category].high <= condition.value {
                     // whole part does not meet condition
                     ()
                 } else {
@@ -235,7 +235,7 @@ fn analyze2(workflows: &Vec<Workflow>, part: RangePart, name: &String) -> u128 {
                 if part.v[&condition.category].high < condition.value  {
                     // whole part meets condition
                     return analyze2(workflows, part, &rule.to)
-                } else if part.v[&condition.category].low > condition.value {
+                } else if part.v[&condition.category].low >= condition.value {
                     // whole part does not meet condition
                     ()
                 } else {
