@@ -239,8 +239,8 @@ fn analyze2(workflows: &Vec<Workflow>, part: RangePart, name: &String) -> u128 {
                     // whole part does not meet condition
                     ()
                 } else {
-                    let low = Range {high:condition.value, ..part.v[&condition.category]};
-                    let high = Range {low:condition.value + 1, ..part.v[&condition.category]};
+                    let low = Range {high:condition.value - 1, ..part.v[&condition.category]};
+                    let high = Range {low:condition.value, ..part.v[&condition.category]};
 
                     let mut low_part = part.clone();
                     let mut high_part = part.clone();
