@@ -5,7 +5,13 @@ mod tests {
     #[test]
     fn part1_example() {
         let result = part1("../example/day20_part1_example.txt").unwrap();
-        assert_eq!(result, 0);
+        assert_eq!(result, 32000000);
+    }
+
+    #[test]
+    fn part1_example2() {
+        let result = part1("../example/day20_part1_example2.txt").unwrap();
+        assert_eq!(result, 11687500);
     }
 
     #[test]

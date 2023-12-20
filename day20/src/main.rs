@@ -1,18 +1,16 @@
-mod main_test;
-
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Read};
-use itertools::{Itertools};
+
+use itertools::Itertools;
 use nom::branch::alt;
 use nom::bytes::complete::tag;
-use nom::character::complete;
-use nom::character::complete::{alpha1, alphanumeric0, alphanumeric1};
-use nom::combinator::opt;
-use nom::error::Error;
+use nom::character::complete::alphanumeric0;
 use nom::IResult;
 use nom::multi::separated_list0;
 use nom::sequence::tuple;
+
+mod main_test;
 
 #[derive(Clone, Eq, PartialEq, Debug)]
 enum ModuleType {
@@ -109,14 +107,14 @@ fn load(path: &str) -> Result<Input, Box<dyn std::error::Error>> {
 }
 
 
-fn energize(input: &Input, outputs: &mut HashMap<String, Output>, name: &String, pulse: bool, low: &mut u32, high: &mut u32) {
-    let module = input.modules.get(name).unwrap();
-
+fn energize(input: &Input, outputs: &mut HashMap<String, Output>, name: &String, pulse: bool, low: &mut u64, high: &mut u64) {
     if pulse {
         *high += 1;
     } else {
         *low += 1;
     }
+
+    let Some(module) = input.modules.get(name) else { return };
 
     match module.module_type {
         ModuleType::FlipFlop => {
@@ -130,8 +128,7 @@ fn energize(input: &Input, outputs: &mut HashMap<String, Output>, name: &String,
         ModuleType::Broadcaster => {
             let output = outputs.get_mut(name).unwrap();
             output.value = pulse;
-            let value = output.value;
-            module.outputs.iter().for_each(|output_name| energize(input, outputs, output_name, value, low, high))
+            module.outputs.iter().for_each(|output_name| energize(input, outputs, output_name, pulse, low, high))
         }
         ModuleType::Conjunction => {
             let all = module.inputs.iter().all(|name| outputs.get(name).unwrap().value);
@@ -143,7 +140,7 @@ fn energize(input: &Input, outputs: &mut HashMap<String, Output>, name: &String,
     }
 }
 
-fn part1(path: &str) -> Result<u32, Box<dyn std::error::Error>> {
+fn part1(path: &str) -> Result<u64, Box<dyn std::error::Error>> {
     let input = load(path)?;
 
     let mut outputs = HashMap::from_iter(
@@ -162,7 +159,7 @@ fn part1(path: &str) -> Result<u32, Box<dyn std::error::Error>> {
     Ok(result)
 }
 
-fn part2(path: &str) -> Result<u32, Box<dyn std::error::Error>> {
+fn part2(path: &str) -> Result<u64, Box<dyn std::error::Error>> {
     let input = load(path)?;
 
     let result = 0;
