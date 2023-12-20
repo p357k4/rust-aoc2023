@@ -146,6 +146,7 @@ fn energize(input: &Input, outputs: &mut HashMap<String, Output>, low: &mut u64,
     while let Some((name, pulse)) = gu.first() {
         let mut updated = update(input, outputs, name, *pulse, low, high);
         gu.append(&mut updated);
+        gu.remove(0);
     }
 }
 
