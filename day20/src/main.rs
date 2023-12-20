@@ -85,7 +85,7 @@ fn load(path: &str) -> Result<Input, Box<dyn std::error::Error>> {
             })
     );
 
-    let modules = HashMap::from_iter(
+    let mut modules = HashMap::from_iter(
         ms.iter()
             .map(|(_, (name, module_type, names))| {
                 let inputs = output_names.iter()
@@ -103,18 +103,23 @@ fn load(path: &str) -> Result<Input, Box<dyn std::error::Error>> {
             })
     );
 
+    modules.insert("rx".to_string(), Module {
+        inputs: vec![],
+        outputs: vec![],
+        module_type: ModuleType::Broadcaster,
+    });
+
     Ok(Input { modules })
 }
 
 fn update(input: &Input, outputs: &mut HashMap<String, Output>, name: &String, pulse: bool, low: &mut u64, high: &mut u64) -> Vec<(String, bool)> {
-
     if pulse {
         *high += 1;
     } else {
         *low += 1;
     }
 
-    let Some(module) = input.modules.get(name) else { return vec![] };
+    let Some(module) = input.modules.get(name) else { todo!() };
 
     match module.module_type {
         ModuleType::FlipFlop => {
@@ -135,8 +140,8 @@ fn update(input: &Input, outputs: &mut HashMap<String, Output>, name: &String, p
         ModuleType::Conjunction => {
             let all = module.inputs.iter().all(|name| outputs.get(name).unwrap().value);
             let output = outputs.get_mut(name).unwrap();
-            output.value = all;
-            let value = !output.value;
+            output.value = !all;
+            let value = output.value;
             module.outputs.iter().map(|output_name| (output_name.clone(), value)).collect_vec()
         }
     }
@@ -157,6 +162,7 @@ fn part1(path: &str) -> Result<u64, Box<dyn std::error::Error>> {
         input.modules.keys().map(|name| (name.to_string(), Output { value: false }))
             .collect_vec()
     );
+
     let mut low = 0;
     let mut high = 0;
 
@@ -172,7 +178,26 @@ fn part1(path: &str) -> Result<u64, Box<dyn std::error::Error>> {
 fn part2(path: &str) -> Result<u64, Box<dyn std::error::Error>> {
     let input = load(path)?;
 
-    let result = 0;
+    let mut outputs = HashMap::from_iter(
+        input.modules.keys().map(|name| (name.to_string(), Output { value: false }))
+            .collect_vec()
+    );
+
+    outputs.get_mut(&"rx".to_string()).unwrap().value = true;
+
+    let mut low = 0;
+    let mut high = 0;
+    let mut result = 0;
+
+    for i in 0..100000000 {
+        let mut updates = vec![("broadcaster".into(), false)];
+        energize(&input, &mut outputs, &mut low, &mut high, &mut updates);
+        if outputs.get(&"rx".to_string()).unwrap().value == false {
+            result = i;
+            break;
+        }
+    }
+
     Ok(result)
 }
 
