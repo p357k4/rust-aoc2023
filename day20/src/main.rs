@@ -105,34 +105,40 @@ fn load(path: &str) -> Result<Input, Box<dyn std::error::Error>> {
             })
     );
 
-    Ok(Input { modules, })
+    Ok(Input { modules })
 }
 
 
-fn energize(input: &Input, outputs: &mut HashMap<String, Output>, name: &String, pulse: bool) {
+fn energize(input: &Input, outputs: &mut HashMap<String, Output>, name: &String, pulse: bool, low: &mut u32, high: &mut u32) {
     let module = input.modules.get(name).unwrap();
+
+    if pulse {
+        *high += 1;
+    } else {
+        *low += 1;
+    }
 
     match module.module_type {
         ModuleType::FlipFlop => {
-            let mut output = outputs.get_mut(name).unwrap();
+            let output = outputs.get_mut(name).unwrap();
             if pulse == false {
                 output.value = !output.value;
                 let value = output.value;
-                module.outputs.iter().for_each(|output_name| energize(input, outputs, output_name, value))
+                module.outputs.iter().for_each(|output_name| energize(input, outputs, output_name, value, low, high))
             }
         }
         ModuleType::Broadcaster => {
-            let mut output = outputs.get_mut(name).unwrap();
+            let output = outputs.get_mut(name).unwrap();
             output.value = pulse;
             let value = output.value;
-            module.outputs.iter().for_each(|output_name| energize(input, outputs, output_name, value))
+            module.outputs.iter().for_each(|output_name| energize(input, outputs, output_name, value, low, high))
         }
         ModuleType::Conjunction => {
             let all = module.inputs.iter().all(|name| outputs.get(name).unwrap().value);
-            let mut output = outputs.get_mut(name).unwrap();
+            let output = outputs.get_mut(name).unwrap();
             output.value = all;
-            let value = output.value;
-            module.outputs.iter().for_each(|output_name| energize(input, outputs, output_name, value))
+            let value = !output.value;
+            module.outputs.iter().for_each(|output_name| energize(input, outputs, output_name, value, low, high))
         }
     }
 }
@@ -144,10 +150,15 @@ fn part1(path: &str) -> Result<u32, Box<dyn std::error::Error>> {
         input.modules.keys().map(|name| (name.to_string(), Output { value: false }))
             .collect_vec()
     );
+    let mut low = 0;
+    let mut high = 0;
 
-    energize(&input, &mut outputs, &"broadcaster".into(), false);
+    for i in 0..1000 {
+        energize(&input, &mut outputs, &"broadcaster".into(), false, &mut low, &mut high);
 
-    let result = 0;
+    }
+
+    let result = low * high;
     Ok(result)
 }
 
