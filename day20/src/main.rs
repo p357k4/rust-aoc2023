@@ -97,8 +97,8 @@ fn load(path: &str) -> Result<Input, Box<dyn std::error::Error>> {
                     inputs,
                     outputs: names.clone(),
                     module_type: module_type.clone(),
-                }
-                    ;
+                };
+
                 (name.to_string(), module)
             })
     );
@@ -106,15 +106,15 @@ fn load(path: &str) -> Result<Input, Box<dyn std::error::Error>> {
     Ok(Input { modules })
 }
 
+fn update(input: &Input, outputs: &mut HashMap<String, Output>, name: &String, pulse: bool, low: &mut u64, high: &mut u64) -> Vec<(String, bool)> {
 
-fn energize(input: &Input, outputs: &mut HashMap<String, Output>, name: &String, pulse: bool, low: &mut u64, high: &mut u64) {
     if pulse {
         *high += 1;
     } else {
         *low += 1;
     }
 
-    let Some(module) = input.modules.get(name) else { return };
+    let Some(module) = input.modules.get(name) else { return vec![] };
 
     match module.module_type {
         ModuleType::FlipFlop => {
@@ -122,21 +122,30 @@ fn energize(input: &Input, outputs: &mut HashMap<String, Output>, name: &String,
             if pulse == false {
                 output.value = !output.value;
                 let value = output.value;
-                module.outputs.iter().for_each(|output_name| energize(input, outputs, output_name, value, low, high))
+                module.outputs.iter().map(|output_name| (output_name.clone(), value)).collect_vec()
+            } else {
+                vec![]
             }
         }
         ModuleType::Broadcaster => {
             let output = outputs.get_mut(name).unwrap();
             output.value = pulse;
-            module.outputs.iter().for_each(|output_name| energize(input, outputs, output_name, pulse, low, high))
+            module.outputs.iter().map(|output_name| (output_name.clone(), pulse)).collect_vec()
         }
         ModuleType::Conjunction => {
             let all = module.inputs.iter().all(|name| outputs.get(name).unwrap().value);
             let output = outputs.get_mut(name).unwrap();
             output.value = all;
             let value = !output.value;
-            module.outputs.iter().for_each(|output_name| energize(input, outputs, output_name, value, low, high))
+            module.outputs.iter().map(|output_name| (output_name.clone(), value)).collect_vec()
         }
+    }
+}
+
+fn energize(input: &Input, outputs: &mut HashMap<String, Output>, low: &mut u64, high: &mut u64, gu: &mut Vec<(String, bool)>) {
+    while let Some((name, pulse)) = gu.first() {
+        let mut updated = update(input, outputs, name, *pulse, low, high);
+        gu.append(&mut updated);
     }
 }
 
@@ -151,8 +160,8 @@ fn part1(path: &str) -> Result<u64, Box<dyn std::error::Error>> {
     let mut high = 0;
 
     for i in 0..1000 {
-        energize(&input, &mut outputs, &"broadcaster".into(), false, &mut low, &mut high);
-
+        let mut updates = vec![("broadcaster".into(), false)];
+        energize(&input, &mut outputs, &mut low, &mut high, &mut updates);
     }
 
     let result = low * high;
