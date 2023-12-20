@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, vec_deque, VecDeque};
 use std::fs::File;
 use std::io::{BufRead, BufReader, Read};
 
@@ -112,46 +112,46 @@ fn load(path: &str) -> Result<Input, Box<dyn std::error::Error>> {
     Ok(Input { modules })
 }
 
-fn update(input: &Input, outputs: &mut HashMap<String, Output>, name: &String, pulse: bool, low: &mut u64, high: &mut u64) -> Vec<(String, bool)> {
+fn update(input: &Input, outputs: &mut HashMap<String, Output>, name: &String, pulse: bool, low: &mut u64, high: &mut u64, gu: &mut VecDeque<(String, bool)>) {
     if pulse {
         *high += 1;
     } else {
         *low += 1;
     }
 
-    let Some(module) = input.modules.get(name) else { todo!() };
+    let Some(module) = input.modules.get(name) else { return; };
 
     match module.module_type {
         ModuleType::FlipFlop => {
             let output = outputs.get_mut(name).unwrap();
             if pulse == false {
                 output.value = !output.value;
-                let value = output.value;
-                module.outputs.iter().map(|output_name| (output_name.clone(), value)).collect_vec()
-            } else {
-                vec![]
+                for output_name in &module.outputs {
+                    gu.push_back((output_name.clone(), output.value))
+                }
             }
         }
         ModuleType::Broadcaster => {
             let output = outputs.get_mut(name).unwrap();
             output.value = pulse;
-            module.outputs.iter().map(|output_name| (output_name.clone(), pulse)).collect_vec()
+            for output_name in &module.outputs {
+                gu.push_back((output_name.clone(), output.value))
+            }
         }
         ModuleType::Conjunction => {
             let all = module.inputs.iter().all(|name| outputs.get(name).unwrap().value);
             let output = outputs.get_mut(name).unwrap();
             output.value = !all;
-            let value = output.value;
-            module.outputs.iter().map(|output_name| (output_name.clone(), value)).collect_vec()
+            for output_name in &module.outputs {
+                gu.push_back((output_name.clone(), output.value))
+            }
         }
     }
 }
 
-fn energize(input: &Input, outputs: &mut HashMap<String, Output>, low: &mut u64, high: &mut u64, gu: &mut Vec<(String, bool)>) {
-    while let Some((name, pulse)) = gu.first() {
-        let mut updated = update(input, outputs, name, *pulse, low, high);
-        gu.append(&mut updated);
-        gu.remove(0);
+fn energize(input: &Input, outputs: &mut HashMap<String, Output>, low: &mut u64, high: &mut u64, gu: &mut VecDeque<(String, bool)>) {
+    while let Some((name, pulse)) = gu.pop_front() {
+        update(input, outputs, &name, pulse, low, high, gu);
     }
 }
 
@@ -159,7 +159,9 @@ fn part1(path: &str) -> Result<u64, Box<dyn std::error::Error>> {
     let input = load(path)?;
 
     let mut outputs = HashMap::from_iter(
-        input.modules.keys().map(|name| (name.to_string(), Output { value: false }))
+        input.modules
+            .keys()
+            .map(|name| (name.to_string(), Output { value: false }))
             .collect_vec()
     );
 
@@ -167,7 +169,7 @@ fn part1(path: &str) -> Result<u64, Box<dyn std::error::Error>> {
     let mut high = 0;
 
     for i in 0..1000 {
-        let mut updates = vec![("broadcaster".into(), false)];
+        let mut updates: VecDeque<(String, bool)> = VecDeque::from([("broadcaster".into(), false)]);
         energize(&input, &mut outputs, &mut low, &mut high, &mut updates);
     }
 
@@ -189,8 +191,10 @@ fn part2(path: &str) -> Result<u64, Box<dyn std::error::Error>> {
     let mut high = 0;
     let mut result = 0;
 
+    let gates = input.modules.iter().filter(|(name, module)| module.module_type == ModuleType::Conjunction).collect_vec();
+
     for i in 0..100000000 {
-        let mut updates = vec![("broadcaster".into(), false)];
+        let mut updates: VecDeque<(String, bool)> = VecDeque::from([("broadcaster".into(), false)]);
         energize(&input, &mut outputs, &mut low, &mut high, &mut updates);
         if outputs.get(&"rx".to_string()).unwrap().value == false {
             result = i;
