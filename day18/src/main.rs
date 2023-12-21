@@ -1,16 +1,12 @@
 mod main_test;
 
-use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufReader, Read};
 use itertools::{Itertools};
-use nom::branch::alt;
 use nom::bytes::complete::tag;
 use nom::character::complete;
-use nom::character::complete::{alpha1, alphanumeric0, alphanumeric1};
-use nom::combinator::opt;
+use nom::character::complete::alphanumeric1;
 use nom::IResult;
-use nom::multi::separated_list0;
 use nom::sequence::tuple;
 
 #[derive(Clone, Eq, PartialEq)]
@@ -84,10 +80,12 @@ fn part1(path: &str) -> Result<u32, Box<dyn std::error::Error>> {
     }
     let mut result = 0;
 
-    let verticals = lines.iter().filter(|line| line.start.row != line.end.row).collect_vec();
+    let verticals = lines.iter().filter(|line| line.direction == 'D' || line.direction == 'U').collect_vec();
 
-    let min_row = verticals.iter().map(|line| line.start.row.min(line.end.row)).min().unwrap();
-    let max_row = verticals.iter().map(|line| line.start.row.max(line.end.row)).max().unwrap();
+    let rows = verticals.iter().flat_map(|line| [line.start.row, line.end.row]);
+
+    let min_row = rows.clone().min().unwrap();
+    let max_row = rows.clone().max().unwrap();
 
     for row in min_row..=max_row {
         let filtered = verticals.iter()
