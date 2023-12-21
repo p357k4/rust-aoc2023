@@ -40,7 +40,7 @@ fn dig(input: &str) -> IResult<&str, Dig> {
     tuple((alphanumeric1, tag(" "), complete::i32, tag(" (#"), alphanumeric1, tag(")")))(input)
         .map(|(leftover, (direction, _, length, _, color, _))| {
             (leftover, Dig {
-                direction: direction.chars().nth(0).unwrap(),
+                direction: direction.chars().next().unwrap(),
                 length,
                 color: color.to_string(),
             })
@@ -92,24 +92,23 @@ fn part1(path: &str) -> Result<u32, Box<dyn std::error::Error>> {
     for row in min_row..=max_row {
         let filtered = verticals.iter()
             .filter(|line| {
-                (line.start.row < line.end.row && line.start.row <= row && row <= line.end.row)
-                    || (line.start.row >= row && row >= line.end.row)
+                (line.direction == 'D' && line.start.row <= row && row <= line.end.row)
+                    || (line.direction == 'U' && line.start.row >= row && row >= line.end.row)
             })
             .sorted_by_key(|line| line.start.column)
             .collect_vec();
 
         let windows = filtered.windows(2).collect_vec();
-        let windows_filtered = windows.iter()
-            .filter(|&&chunk| chunk[0].start.row > chunk[0].end.row)
-            .collect_vec();
-        let span = windows_filtered
+        let span = windows
             .iter()
             .map(|&chunk| {
                 let diff = chunk[1].start.column.abs_diff(chunk[0].start.column);
-                if chunk[1].start.row > chunk[1].end.row {
+                if chunk[0].direction == chunk[1].direction {
                     diff
-                } else {
+                } else if chunk[0].direction == 'U' && chunk[1].direction == 'D' {
                     1 + diff
+                } else {
+                    0
                 }
             })
             .collect_vec();
