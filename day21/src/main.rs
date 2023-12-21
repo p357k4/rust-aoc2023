@@ -1,5 +1,6 @@
 mod main_test;
 
+use std::collections::HashMap;
 use std::error::Error;
 use std::fmt::{Debug, Display, Formatter};
 use std::fs::File;
@@ -13,6 +14,11 @@ struct Point {
     column: usize,
 }
 
+#[derive(Clone, Eq, PartialEq, Hash)]
+struct PointSteps {
+    point: Point,
+    steps: usize,
+}
 #[derive(Debug)]
 enum PuzzleError {
     Input,
@@ -38,16 +44,16 @@ fn load(path: &str) -> Result<Input, PuzzleError> {
 
     let lines = reader.lines()
         .flatten()
-        .map(|v|v.chars().collect_vec())
+        .map(|v| v.chars().collect_vec())
         .collect_vec();
 
     let grid = Array2D::from_rows(&lines).unwrap();
 
     for row in 0..grid.num_columns() {
-        for column in 0.. grid.num_columns() {
+        for column in 0..grid.num_columns() {
             if *grid.get(row, column).unwrap() == 'S' {
-                let start = Point{row, column};
-                return Ok(Input { grid, start })
+                let start = Point { row, column };
+                return Ok(Input { grid, start });
             }
         }
     }
@@ -73,7 +79,6 @@ fn next(grid: &Array2D<char>, p1: &Point, direction: Direction) -> Option<Point>
 }
 
 fn walk(grid: &Array2D<char>, steps: &mut Array2D<u32>, start: Point, depth: usize) -> usize {
-
     let mut firsts = vec![start];
 
     for i in 0..depth {
@@ -90,20 +95,20 @@ fn walk(grid: &Array2D<char>, steps: &mut Array2D<u32>, start: Point, depth: usi
 
             for next in next_options_vec.iter().flatten() {
                 if nexts.contains(next) {
-                    continue
+                    continue;
                 }
 
                 let block = *grid.get(next.row, next.column).unwrap();
                 if block == '#' {
-                    continue
+                    continue;
                 }
 
-                let next_steps = *steps.get(next.row, next.column).unwrap();
-                if next_steps > p0_steps + 1 {
-                    continue
-                }
-
-                *steps.get_mut(next.row, next.column).unwrap() = p0_steps + 1;
+                // let next_steps = *steps.get(next.row, next.column).unwrap();
+                // if next_steps > p0_steps + 1 {
+                //     continue
+                // }
+                //
+                // *steps.get_mut(next.row, next.column).unwrap() = p0_steps + 1;
                 nexts.push(next.clone())
             }
         }
@@ -112,6 +117,73 @@ fn walk(grid: &Array2D<char>, steps: &mut Array2D<u32>, start: Point, depth: usi
     }
 
     firsts.len()
+}
+
+fn infinite_next(grid: &Array2D<char>, p1: &Point, direction: Direction) -> (Option<Point>, Option<Point>) {
+    match direction {
+        Direction::North if p1.row > 0 => (Some(Point { row: p1.row - 1, column: p1.column }), None),
+        Direction::South if p1.row < grid.num_rows() - 1 => (Some(Point { row: p1.row + 1, column: p1.column }), None),
+        Direction::East if p1.column < grid.num_columns() - 1 => (Some(Point { row: p1.row, column: p1.column + 1 }), None),
+        Direction::West if p1.column > 0 => (Some(Point { row: p1.row, column: p1.column - 1 }), None),
+        Direction::North => (None, Some(Point { row: grid.num_rows() - 1, column: p1.column })),
+        Direction::South => (None, Some(Point { row: 0, column: p1.column })),
+        Direction::East=> (None, Some(Point { row: p1.row, column: 0 })),
+        Direction::West => (None, Some(Point { row: p1.row, column: grid.num_columns() - 1 })),
+    }
+}
+
+fn infinite_walk(grid: &Array2D<char>, cache: &mut HashMap<PointSteps, usize>, p0: &Point, depth: usize) -> usize {
+    if depth == 0 {
+        return 1
+    }
+
+    let mut sum = 0;
+
+    let key = PointSteps{point: p0.clone(), steps: depth};
+    let p0_steps_option = cache.get(&key);
+    if let Some(&p0_steps) = p0_steps_option {
+        return p0_steps
+    }
+
+    let mut firsts = vec![p0.clone()];
+
+    for i in 0..depth {
+        let mut nexts = vec![];
+        for p0 in &firsts {
+            let inner_outer_options_vec = [
+                infinite_next(grid, p0, Direction::South),
+                infinite_next(grid, p0, Direction::North),
+                infinite_next(grid, p0, Direction::East),
+                infinite_next(grid, p0, Direction::West),
+            ];
+
+            for next in inner_outer_options_vec.iter().filter_map(|v|v.1.clone()) {
+                let seed_steps = infinite_walk(grid, cache, &next, depth - 1);
+                sum += seed_steps;
+            }
+
+
+            for next in inner_outer_options_vec.iter().filter_map(|v|v.0.clone()) {
+                if nexts.contains(&next) {
+                    continue;
+                }
+
+                let block = *grid.get(next.row, next.column).unwrap();
+                if block == '#' {
+                    continue;
+                }
+
+                nexts.push(next.clone())
+            }
+        }
+
+        firsts = nexts;
+    }
+
+    sum += firsts.len();
+
+    cache.insert(key, sum);
+    sum
 }
 
 fn part1(path: &str, depth: usize) -> Result<usize, Box<dyn std::error::Error>> {
@@ -123,10 +195,11 @@ fn part1(path: &str, depth: usize) -> Result<usize, Box<dyn std::error::Error>> 
     Ok(result)
 }
 
-fn part2(path: &str) -> Result<usize, Box<dyn std::error::Error>> {
+fn part2(path: &str, depth: usize) -> Result<usize, Box<dyn std::error::Error>> {
     let input = load(path)?;
 
-    let result = 0;
+    let mut cache = HashMap::new();
+    let result = infinite_walk(&input.grid, &mut cache, &input.start, depth);
     Ok(result)
 }
 
