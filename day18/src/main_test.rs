@@ -11,13 +11,13 @@ mod tests {
     #[test]
     fn part1_full() {
         let result = part1("../data/day18_part1.txt").unwrap();
-        assert_eq!(result, 0);
+        assert_eq!(result, 42317);
     }
 
     #[test]
     fn part2_example1() {
         let result = part2("../example/day18_part1_example.txt").unwrap();
-        assert_eq!(result, 0);
+        assert_eq!(result, 83605563360288);
     }
 
     #[test]

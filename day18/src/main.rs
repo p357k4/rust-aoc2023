@@ -12,14 +12,13 @@ use nom::sequence::tuple;
 #[derive(Clone, Eq, PartialEq)]
 struct Dig {
     direction: char,
-    length: i32,
-    color: String,
+    length: i128,
 }
 
 #[derive(Clone, Eq, PartialEq)]
 struct Point {
-    row: i32,
-    column: i32,
+    row: i128,
+    column: i128,
 }
 
 struct Line {
@@ -33,12 +32,30 @@ struct Input {
 }
 
 fn dig(input: &str) -> IResult<&str, Dig> {
-    tuple((alphanumeric1, tag(" "), complete::i32, tag(" (#"), alphanumeric1, tag(")")))(input)
+    tuple((alphanumeric1, tag(" "), complete::i128, tag(" (#"), alphanumeric1, tag(")")))(input)
         .map(|(leftover, (direction, _, length, _, color, _))| {
             (leftover, Dig {
                 direction: direction.chars().next().unwrap(),
                 length,
-                color: color.to_string(),
+            })
+        })
+}
+
+fn dig2(input: &str) -> IResult<&str, Dig> {
+    tuple((alphanumeric1, tag(" "), complete::i32, tag(" (#"), alphanumeric1, tag(")")))(input)
+        .map(|(leftover, (direction, _, color, _, length, _))| {
+
+            // 0 means R, 1 means D, 2 means L, and 3 means U.
+            let direction = match length.chars().last().unwrap() {
+                '0' => 'R',
+                '1' => 'D',
+                '2' => 'L',
+                '3' => 'U',
+                _ => todo!(),
+            };
+            (leftover, Dig {
+                direction: direction,
+                length: i128::from_str_radix(&length[0..length.len()-1], 16).unwrap(),
             })
         })
 }
@@ -60,12 +77,29 @@ fn load(path: &str) -> Result<Input, Box<dyn std::error::Error>> {
     Ok(Input { dig_plan })
 }
 
-fn part1(path: &str) -> Result<u32, Box<dyn std::error::Error>> {
+fn load2(path: &str) -> Result<Input, Box<dyn std::error::Error>> {
+    let file = File::open(path)?;
+    let mut reader = BufReader::new(file);
+
+    let mut content = String::new();
+
+    reader.read_to_string(&mut content);
+
+    let dig_plan = content.split("\n")
+        .map(|line| {
+            let (leftover, part) = dig2(line).unwrap();
+            part
+        }).collect_vec();
+
+    Ok(Input { dig_plan })
+}
+
+fn part1(path: &str) -> Result<i128, Box<dyn std::error::Error>> {
     let input = load(path)?;
 
     let mut prev = Point { row: 0, column: 0 };
-    let mut lines = vec![];
 
+    let mut result = 0;
     for dig in input.dig_plan {
         let next = match dig.direction {
             'R' => Point { row: prev.row, column: prev.column + dig.length },
@@ -74,55 +108,34 @@ fn part1(path: &str) -> Result<u32, Box<dyn std::error::Error>> {
             'D' => Point { row: prev.row + dig.length, column: prev.column },
             _ => todo!(),
         };
-        let line = Line { start: prev, end: next.clone(), direction: dig.direction };
-        lines.push(line);
+
+        result += (prev.row + next.row) * (prev.column - next.column);
+        result += dig.length;
         prev = next.clone();
     }
-    let mut result = 0;
-
-    let verticals = lines.iter().filter(|line| line.direction == 'D' || line.direction == 'U').collect_vec();
-
-    let rows = verticals.iter().flat_map(|line| [line.start.row, line.end.row]);
-
-    let min_row = rows.clone().min().unwrap();
-    let max_row = rows.clone().max().unwrap();
-
-    for row in min_row..=max_row {
-        let filtered = verticals.iter()
-            .filter(|line| {
-                (line.direction == 'D' && line.start.row <= row && row <= line.end.row)
-                    || (line.direction == 'U' && line.start.row >= row && row >= line.end.row)
-            })
-            .sorted_by_key(|line| line.start.column)
-            .collect_vec();
-
-        let windows = filtered.windows(2).collect_vec();
-        let span = windows
-            .iter()
-            .map(|&chunk| {
-                let diff = chunk[1].start.column.abs_diff(chunk[0].start.column);
-                if chunk[0].direction == chunk[1].direction {
-                    diff
-                } else if chunk[0].direction == 'U' && chunk[1].direction == 'D' {
-                    1 + diff
-                } else {
-                    0
-                }
-            })
-            .collect_vec();
-
-        let sum: u32 = span.iter().sum();
-
-        result += sum;
-    }
-
-    Ok(result)
+    Ok(result.abs() / 2 + 1)
 }
 
-fn part2(path: &str) -> Result<u32, Box<dyn std::error::Error>> {
-    let input = load(path)?;
-    let result = 0;
-    Ok(result)
+fn part2(path: &str) -> Result<i128, Box<dyn std::error::Error>> {
+    let input = load2(path)?;
+
+    let mut prev = Point { row: 0, column: 0 };
+
+    let mut result = 0;
+    for dig in input.dig_plan {
+        let next = match dig.direction {
+            'R' => Point { row: prev.row, column: prev.column + dig.length },
+            'L' => Point { row: prev.row, column: prev.column - dig.length },
+            'U' => Point { row: prev.row - dig.length, column: prev.column },
+            'D' => Point { row: prev.row + dig.length, column: prev.column },
+            _ => todo!(),
+        };
+
+        result += (prev.row + next.row) * (prev.column - next.column);
+        result += dig.length;
+        prev = next.clone();
+    }
+    Ok(result.abs() / 2 + 1)
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
