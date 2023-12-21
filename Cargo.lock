@@ -135,6 +135,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "day18"
+version = "0.1.0"
+dependencies = [
+ "array2d",
+ "itertools",
+ "nom",
+]
+
+[[package]]
 name = "day19"
 version = "0.1.0"
 dependencies = [
