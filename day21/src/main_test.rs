@@ -16,7 +16,7 @@ mod tests {
 
     #[test]
     fn part2_example1() {
-        let result = part2("../example/day21_part1_example.txt", 10).unwrap();
+        let result = part2("../example/day21_part1_example.txt", 1000).unwrap();
         assert_eq!(result, 0);
     }
 

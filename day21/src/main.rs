@@ -5,13 +5,14 @@ use std::error::Error;
 use std::fmt::{Debug, Display, Formatter};
 use std::fs::File;
 use std::io::{BufRead, BufReader};
+use std::ops::Rem;
 use array2d::Array2D;
 use itertools::{Itertools};
 
 #[derive(Clone, Eq, PartialEq, Hash)]
 struct Point {
-    row: usize,
-    column: usize,
+    row: i32,
+    column: i32,
 }
 
 #[derive(Clone, Eq, PartialEq, Hash)]
@@ -52,7 +53,7 @@ fn load(path: &str) -> Result<Input, PuzzleError> {
     for row in 0..grid.num_columns() {
         for column in 0..grid.num_columns() {
             if *grid.get(row, column).unwrap() == 'S' {
-                let start = Point { row, column };
+                let start = Point { row: row as i32, column: column as i32 };
                 return Ok(Input { grid, start });
             }
         }
@@ -71,8 +72,8 @@ enum Direction {
 fn next(grid: &Array2D<char>, p1: &Point, direction: Direction) -> Option<Point> {
     match direction {
         Direction::North if p1.row > 0 => Some(Point { row: p1.row - 1, column: p1.column }),
-        Direction::South if p1.row < grid.num_rows() - 1 => Some(Point { row: p1.row + 1, column: p1.column }),
-        Direction::East if p1.column < grid.num_columns() - 1 => Some(Point { row: p1.row, column: p1.column + 1 }),
+        Direction::South if p1.row < (grid.num_rows() - 1) as i32 => Some(Point { row: p1.row + 1, column: p1.column }),
+        Direction::East if p1.column < (grid.num_columns() - 1) as i32 => Some(Point { row: p1.row, column: p1.column + 1 }),
         Direction::West if p1.column > 0 => Some(Point { row: p1.row, column: p1.column - 1 }),
         _ => None
     }
@@ -84,7 +85,7 @@ fn walk(grid: &Array2D<char>, steps: &mut Array2D<u32>, start: Point, depth: usi
     for i in 0..depth {
         let mut nexts = vec![];
         for p0 in &firsts {
-            let p0_steps = *steps.get(p0.row, p0.column).unwrap();
+            let p0_steps = *steps.get(p0.row as usize, p0.column as usize).unwrap();
 
             let next_options_vec = [
                 next(grid, p0, Direction::South),
@@ -98,7 +99,7 @@ fn walk(grid: &Array2D<char>, steps: &mut Array2D<u32>, start: Point, depth: usi
                     continue;
                 }
 
-                let block = *grid.get(next.row, next.column).unwrap();
+                let block = *grid.get(next.row as usize, next.column as usize).unwrap();
                 if block == '#' {
                     continue;
                 }
@@ -119,16 +120,16 @@ fn walk(grid: &Array2D<char>, steps: &mut Array2D<u32>, start: Point, depth: usi
     firsts.len()
 }
 
-fn infinite_next(grid: &Array2D<char>, p1: &Point, direction: Direction) -> (Option<Point>, Option<Point>) {
+fn infinite_next(grid: &Array2D<char>, p1: &Point, direction: Direction) -> Point {
     match direction {
-        Direction::North if p1.row > 0 => (Some(Point { row: p1.row - 1, column: p1.column }), None),
-        Direction::South if p1.row < grid.num_rows() - 1 => (Some(Point { row: p1.row + 1, column: p1.column }), None),
-        Direction::East if p1.column < grid.num_columns() - 1 => (Some(Point { row: p1.row, column: p1.column + 1 }), None),
-        Direction::West if p1.column > 0 => (Some(Point { row: p1.row, column: p1.column - 1 }), None),
-        Direction::North => (None, Some(Point { row: grid.num_rows() - 1, column: p1.column })),
-        Direction::South => (None, Some(Point { row: 0, column: p1.column })),
-        Direction::East=> (None, Some(Point { row: p1.row, column: 0 })),
-        Direction::West => (None, Some(Point { row: p1.row, column: grid.num_columns() - 1 })),
+        Direction::North if p1.row > 0 => Point { row: p1.row - 1, column: p1.column },
+        Direction::South if p1.row < (grid.num_rows() - 1) as i32 => Point { row: p1.row + 1, column: p1.column },
+        Direction::East if p1.column < (grid.num_columns() - 1) as i32 => Point { row: p1.row, column: p1.column + 1 },
+        Direction::West if p1.column > 0 => Point { row: p1.row, column: p1.column - 1 },
+        Direction::North => Point { row: p1.row - 1, column: p1.column },
+        Direction::South => Point { row: p1.row + 1, column: p1.column },
+        Direction::East=> Point { row: p1.row, column: p1.column + 1 },
+        Direction::West => Point { row: p1.row, column: p1.column - 1 },
     }
 }
 
@@ -150,25 +151,21 @@ fn infinite_walk(grid: &Array2D<char>, cache: &mut HashMap<PointSteps, usize>, p
     for i in 0..depth {
         let mut nexts = vec![];
         for p0 in &firsts {
-            let inner_outer_options_vec = [
+            let next_options_vec = [
                 infinite_next(grid, p0, Direction::South),
                 infinite_next(grid, p0, Direction::North),
                 infinite_next(grid, p0, Direction::East),
                 infinite_next(grid, p0, Direction::West),
             ];
 
-            for next in inner_outer_options_vec.iter().filter_map(|v|v.1.clone()) {
-                let seed_steps = infinite_walk(grid, cache, &next, depth - 1);
-                sum += seed_steps;
-            }
-
-
-            for next in inner_outer_options_vec.iter().filter_map(|v|v.0.clone()) {
-                if nexts.contains(&next) {
+            for next in next_options_vec.iter() {
+                if nexts.contains(next) {
                     continue;
                 }
 
-                let block = *grid.get(next.row, next.column).unwrap();
+                let row = (next.row.rem_euclid(grid.num_columns() as i32)) as usize;
+                let column = (next.column.rem_euclid(grid.num_columns() as i32))as usize;
+                let block = *grid.get(row, column).unwrap();
                 if block == '#' {
                     continue;
                 }
