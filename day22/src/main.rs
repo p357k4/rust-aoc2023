@@ -1,5 +1,6 @@
 mod main_test;
 
+use std::collections::VecDeque;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Read};
 use array2d::Array2D;
@@ -52,6 +53,38 @@ fn load(path: &str) -> Result<Input, Box<dyn std::error::Error>> {
     Ok(Input { blocks })
 }
 
+fn clip(block: &Block, other: &Block) -> Block {
+    let mut q = other.clone();
+
+    if q.x0 <= block.x0 && block.x0 <= q.x1 {
+        q.x0 = block.x0;
+    }
+
+    if q.x0 <= block.x1 && block.x1 <= q.x1 {
+        q.x1 = block.x1;
+    }
+
+    if q.y0 <= block.y0 && block.y0 <= q.y1 {
+        q.y0 = block.y0;
+    }
+
+    if q.y0 <= block.y1 && block.y1 <= q.y1 {
+        q.y1 = block.y1;
+    }
+
+
+    if q.z0 <= block.z0 && block.z0 <= q.z1 {
+        q.z0 = block.z0;
+    }
+
+    if q.z0 <= block.z1 && block.z1 <= q.z1 {
+        q.z1 = block.z1;
+    }
+
+    q.clone()
+}
+
+
 fn xy_overlap(left: &Block, right: &Block) -> bool {
     (left.x0 <= right.x0 && right.x0 <= left.x1 && left.y0 <= right.y0 && right.y0 <= left.y1)
         || (right.x0 <= left.x0 && left.x0 <= right.x1 && right.y0 <= left.y0 && left.y0 <= right.y1)
@@ -71,7 +104,7 @@ fn part1(path: &str) -> Result<usize, Box<dyn std::error::Error>> {
 
         for j in i + 1..length {
             let other = sorted[j];
-            if !xy_overlap(&block, other) {
+            if !xy_overlap(&block, &clip(&block, other)) {
                 let dz = block.z0 - other.z0;
                 block.z0 -= dz;
                 block.z1 -= dz;
