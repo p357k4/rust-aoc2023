@@ -40,17 +40,16 @@ fn load(path: &str) -> Result<Input, Box<dyn Error>> {
 
     let grid = Array2D::from_rows(&lines).unwrap();
 
-    for row in 0..grid.num_columns() {
-        for column in 0..grid.num_columns() {
-            if *grid.get(row, column).unwrap() == 'S' {
-                let start = Point { row, column };
-                return Ok(Input { grid, start });
-            }
+    for column in 0..grid.num_columns() {
+        if *grid.get(0, column).unwrap() == '.' {
+            let start = Point { row: 0, column };
+            return Ok(Input { grid, start });
         }
     }
 
     todo!("we should never be here")
 }
+
 fn part1(path: &str) -> Result<usize, Box<dyn std::error::Error>> {
     let input = load(path)?;
 
@@ -63,15 +62,15 @@ fn part1(path: &str) -> Result<usize, Box<dyn std::error::Error>> {
 }
 
 fn walk(grid: &Array2D<char>, steps: &mut Array2D<usize>, p: &Point, depth: usize) {
-    let Some(c) = grid.get(p.row, p.column) else { return  };
+    let Some(c) = grid.get(p.row, p.column) else { return; };
 
     if *c == '#' {
-        return
+        return;
     }
 
     let ps = *steps.get(p.row, p.column).unwrap();
     if ps > depth {
-        return
+        return;
     }
     *steps.get_mut(p.row, p.column).unwrap() = depth;
 
@@ -84,7 +83,7 @@ fn walk(grid: &Array2D<char>, steps: &mut Array2D<usize>, p: &Point, depth: usiz
 }
 
 fn directions(grid: &Array2D<char>, p1: &Point) -> Vec<Direction> {
-    let Some(c) = grid.get(p1.row, p1.column) else { return vec![] };
+    let Some(c) = grid.get(p1.row, p1.column) else { return vec![]; };
 
     match c {
         'S' | '.' => vec![Direction::North, Direction::South, Direction::West, Direction::East],
