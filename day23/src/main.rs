@@ -12,6 +12,7 @@ use itertools::{Itertools};
 struct Input {
     grid: Array2D<char>,
     start: Point,
+    end: Point,
 }
 
 #[derive(Clone, Eq, PartialEq, Hash)]
@@ -22,7 +23,7 @@ enum Direction {
     South,
 }
 
-#[derive(Clone, Eq, PartialEq, Hash)]
+#[derive(Clone, Copy, Eq, PartialEq, Hash)]
 struct Point {
     row: usize,
     column: usize,
@@ -40,12 +41,24 @@ fn load(path: &str) -> Result<Input, Box<dyn Error>> {
 
     let grid = Array2D::from_rows(&lines).unwrap();
 
+    let mut start = Point{row:0,column:0};
+    let mut end= Point{row:0,column:0};
+
     for column in 0..grid.num_columns() {
         if *grid.get(0, column).unwrap() == '.' {
-            let start = Point { row: 0, column };
-            return Ok(Input { grid, start });
+            start = Point { row: 0, column };
+            break
         }
     }
+
+    for column in 0..grid.num_columns() {
+        if *grid.get(grid.num_rows() - 1, column).unwrap() == '.' {
+            end = Point { row: grid.num_rows() - 1, column };
+            break
+        }
+    }
+
+    return Ok(Input { grid, start, end });
 
     todo!("we should never be here")
 }
@@ -55,14 +68,17 @@ fn part1(path: &str) -> Result<usize, Box<dyn std::error::Error>> {
 
     let mut steps = Array2D::filled_by_row_major(|| 0, input.grid.num_rows(), input.grid.num_columns());
 
-    walk(&input.grid, &mut steps, &input.start, 1);
+    let ps = vec![input.start];
+    walk(&input, &mut steps, &ps, 1);
 
-    let result = steps.elements_row_major_iter().max().unwrap();
-    Ok(*result)
+    let result = steps.get(input.end.row, input.end.column).unwrap() - steps.get(input.start.row, input.start.column).unwrap();
+    Ok(result)
 }
 
-fn walk(grid: &Array2D<char>, steps: &mut Array2D<usize>, p: &Point, depth: usize) {
-    let Some(c) = grid.get(p.row, p.column) else { return; };
+fn walk(input: &Input, steps: &mut Array2D<usize>, path: &Vec<Point>, depth: usize) {
+    let Some(p) = path.first() else { return };
+
+    let Some(c) = input.grid.get(p.row, p.column) else { return; };
 
     if *c == '#' {
         return;
@@ -74,11 +90,21 @@ fn walk(grid: &Array2D<char>, steps: &mut Array2D<usize>, p: &Point, depth: usiz
     }
     *steps.get_mut(p.row, p.column).unwrap() = depth;
 
-    let ds = directions(grid, &p);
-    let nos = ds.iter().map(|d| next(grid, &p, d)).collect_vec();
+    if *p == input.end {
+        return
+    }
+
+    let ds = directions(&input.grid, &p);
+    let nos = ds.iter().map(|d| next(&input.grid, &p, d)).collect_vec();
 
     for n in nos.iter().flatten() {
-        walk(grid, steps, n, depth + 1)
+        if path.contains(&n) {
+            continue
+        }
+
+        let mut nps = path.clone();
+        nps.insert(0, n.clone());
+        walk(input, steps, &nps, depth + 1)
     }
 }
 
