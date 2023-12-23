@@ -66,7 +66,7 @@ fn load(path: &str) -> Result<Input, Box<dyn Error>> {
 fn part1(path: &str) -> Result<usize, Box<dyn std::error::Error>> {
     let input = load(path)?;
 
-    let mut steps = Array2D::filled_by_row_major(|| 0, input.grid.num_rows(), input.grid.num_columns());
+    let mut steps = Array2D::filled_by_row_major(|| 1, input.grid.num_rows(), input.grid.num_columns());
 
     let ps = vec![Point { row: input.start.row + 1, column: input.start.column }, input.start];
     let result = walk(&input, &mut steps, &ps, 1, &directions);
@@ -80,15 +80,10 @@ fn walk(input: &Input, steps: &mut Array2D<usize>, path: &Vec<Point>, depth: usi
 
     let Some(c) = input.grid.get(p.row, p.column) else { return 0; };
 
-    if *c == '#' {
-        return 0;
+    let Some(ps) = steps.get(p.row, p.column) else { return 0; };
+    if *ps == 0 {
+        return *ps;
     }
-
-    // let Some(ps) = steps.get(p.row, p.column) else { return 0; };
-    // if *ps > depth {
-    //     return *ps;
-    // }
-    // *steps.get_mut(p.row, p.column).unwrap() = depth;
 
     if *p == input.end {
         return depth;
@@ -96,11 +91,31 @@ fn walk(input: &Input, steps: &mut Array2D<usize>, path: &Vec<Point>, depth: usi
 
     let ds = directions(&input.grid, p);
 
-    let mo = ds.iter().map(|d| next(p, d))
+    let ns = ds.iter()
+        .map(|d| next(p, d))
+        .filter(|n| {
+            let c = input.grid.get(n.row, n.column).unwrap();
+            *c != '#'
+        })
+        .collect_vec();
+
+    if ns.is_empty() {
+        *steps.get_mut(p.row, p.column).unwrap() = 0;
+        return 0
+    }
+
+    let mcs = ns.iter().map(|n|*steps.get_mut(n.row, n.column).unwrap()).max().unwrap();
+
+    if mcs == 0 {
+        *steps.get_mut(p.row, p.column).unwrap() = 0;
+        return 0
+    }
+
+    let mo = ns.iter()
         .filter(|n| !path.contains(n))
         .map(|n| {
             let mut nps = path.clone();
-            nps.insert(0, n);
+            nps.insert(0, *n);
             walk(input, steps, &nps, depth + 1, directions)
         })
         .max();
@@ -133,7 +148,7 @@ fn next(p1: &Point, direction: &Direction) -> Point {
 fn part2(path: &str) -> Result<usize, Box<dyn std::error::Error>> {
     let input = load(path)?;
 
-    let mut steps = Array2D::filled_by_row_major(|| 0, input.grid.num_rows(), input.grid.num_columns());
+    let mut steps = Array2D::filled_by_row_major(|| 1, input.grid.num_rows(), input.grid.num_columns());
 
     let ps = vec![Point { row: input.start.row + 1, column: input.start.column }, input.start];
     let result = walk(&input, &mut steps, &ps, 1, &directions2);
