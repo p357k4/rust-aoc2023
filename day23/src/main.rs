@@ -78,8 +78,6 @@ fn part1(path: &str) -> Result<usize, Box<dyn std::error::Error>> {
 fn walk(input: &Input, steps: &mut Array2D<usize>, path: &Vec<Point>, depth: usize, directions: &impl Fn(&Array2D<char>, &Point) -> Vec<Direction>) -> usize {
     let Some(p) = path.first() else { return 0; };
 
-    let Some(c) = input.grid.get(p.row, p.column) else { return 0; };
-
     let Some(ps) = steps.get(p.row, p.column) else { return 0; };
     if *ps == 0 {
         return *ps;
