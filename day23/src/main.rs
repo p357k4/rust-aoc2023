@@ -68,7 +68,7 @@ fn part1(path: &str) -> Result<usize, Box<dyn std::error::Error>> {
 
     let mut steps = Array2D::filled_by_row_major(|| 0, input.grid.num_rows(), input.grid.num_columns());
 
-    let ps = vec![input.start];
+    let ps = vec![Point{row: input.start.row + 1, column: input.start.column}, input.start];
     walk(&input, &mut steps, &ps, 1, &directions);
 
     let result = steps.get(input.end.row, input.end.column).unwrap() - steps.get(input.start.row, input.start.column).unwrap();
@@ -96,7 +96,7 @@ fn walk(input: &Input, steps: &mut Array2D<usize>, path: &Vec<Point>, depth: usi
 
     let ds = directions(&input.grid, p);
 
-    for n in ds.iter().filter_map(|d| next(&input.grid, p, d)) {
+    for n in ds.iter().map(|d| next(p, d)) {
         if path.contains(&n) {
             continue;
         }
@@ -120,13 +120,13 @@ fn directions(grid: &Array2D<char>, p1: &Point) -> Vec<Direction> {
 }
 
 
-fn next(grid: &Array2D<char>, p1: &Point, direction: &Direction) -> Option<Point> {
+fn next(p1: &Point, direction: &Direction) -> Point {
     match direction {
-        Direction::North if p1.row > 0 => Some(Point { row: p1.row - 1, column: p1.column }),
-        Direction::South if p1.row < grid.num_rows() - 1 => Some(Point { row: p1.row + 1, column: p1.column }),
-        Direction::East if p1.column < grid.num_columns() - 1 => Some(Point { row: p1.row, column: p1.column + 1 }),
-        Direction::West if p1.column > 0 => Some(Point { row: p1.row, column: p1.column - 1 }),
-        _ => None
+        Direction::North => Point { row: p1.row - 1, column: p1.column },
+        Direction::South => Point { row: p1.row + 1, column: p1.column },
+        Direction::East => Point { row: p1.row, column: p1.column + 1 },
+        Direction::West => Point { row: p1.row, column: p1.column - 1 },
+        _ => todo!("we should never be here")
     }
 }
 
@@ -135,7 +135,7 @@ fn part2(path: &str) -> Result<usize, Box<dyn std::error::Error>> {
 
     let mut steps = Array2D::filled_by_row_major(|| 0, input.grid.num_rows(), input.grid.num_columns());
 
-    let ps = vec![input.start];
+    let ps = vec![Point{row: input.start.row + 1, column: input.start.column}, input.start];
     walk(&input, &mut steps, &ps, 1, &directions2);
 
     let result = steps.get(input.end.row, input.end.column).unwrap() - steps.get(input.start.row, input.start.column).unwrap();
