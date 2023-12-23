@@ -41,20 +41,20 @@ fn load(path: &str) -> Result<Input, Box<dyn Error>> {
 
     let grid = Array2D::from_rows(&lines).unwrap();
 
-    let mut start = Point{row:0,column:0};
-    let mut end= Point{row:0,column:0};
+    let mut start = Point { row: 0, column: 0 };
+    let mut end = Point { row: 0, column: 0 };
 
     for column in 0..grid.num_columns() {
         if *grid.get(0, column).unwrap() == '.' {
             start = Point { row: 0, column };
-            break
+            break;
         }
     }
 
     for column in 0..grid.num_columns() {
         if *grid.get(grid.num_rows() - 1, column).unwrap() == '.' {
             end = Point { row: grid.num_rows() - 1, column };
-            break
+            break;
         }
     }
 
@@ -76,7 +76,7 @@ fn part1(path: &str) -> Result<usize, Box<dyn std::error::Error>> {
 }
 
 fn walk(input: &Input, steps: &mut Array2D<usize>, path: &Vec<Point>, depth: usize, directions: &impl Fn(&Array2D<char>, &Point) -> Vec<Direction>) {
-    let Some(p) = path.first() else { return };
+    let Some(p) = path.first() else { return; };
 
     let Some(c) = input.grid.get(p.row, p.column) else { return; };
 
@@ -84,26 +84,25 @@ fn walk(input: &Input, steps: &mut Array2D<usize>, path: &Vec<Point>, depth: usi
         return;
     }
 
-    let ps = *steps.get(p.row, p.column).unwrap();
-    if ps > depth {
+    let Some(ps) = steps.get(p.row, p.column) else { return; };
+    if *ps > depth {
         return;
     }
     *steps.get_mut(p.row, p.column).unwrap() = depth;
 
     if *p == input.end {
-        return
+        return;
     }
 
-    let ds = directions(&input.grid, &p);
-    let nos = ds.iter().map(|d| next(&input.grid, &p, d)).collect_vec();
+    let ds = directions(&input.grid, p);
 
-    for n in nos.iter().flatten() {
-        if path.contains(n) {
-            continue
+    for n in ds.iter().filter_map(|d| next(&input.grid, p, d)) {
+        if path.contains(&n) {
+            continue;
         }
 
         let mut nps = path.clone();
-        nps.insert(0, *n);
+        nps.insert(0, n);
         walk(input, steps, &nps, depth + 1, directions)
     }
 }
