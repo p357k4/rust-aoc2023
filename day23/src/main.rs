@@ -115,7 +115,11 @@ fn walk(input: &Input, steps: &mut Array2D<usize>, path: &Vec<Point>, depth: usi
         })
         .max();
 
-    mo.unwrap_or_default()
+    let m = mo.unwrap_or_default();
+    if m > 1 {
+        *steps.get_mut(p.row, p.column).unwrap() = m;
+    }
+    m
 }
 
 fn directions(grid: &Array2D<char>, p1: &Point) -> Vec<Direction> {
