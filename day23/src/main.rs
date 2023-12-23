@@ -110,6 +110,7 @@ fn walk(input: &Input, steps: &mut Array2D<usize>, path: &Vec<Point>, depth: usi
 fn directions(grid: &Array2D<char>, p1: &Point) -> Vec<Direction> {
     match grid.get(p1.row, p1.column) {
         Some('.') => vec![Direction::North, Direction::South, Direction::West, Direction::East],
+        Some('^') => vec![Direction::North],
         Some('>') => vec![Direction::East],
         Some('<') => vec![Direction::West],
         Some('v') => vec![Direction::South],
