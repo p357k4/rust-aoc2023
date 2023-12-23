@@ -92,18 +92,19 @@ fn walk(input: &Input, steps: &mut Array2D<usize>, path: &Vec<Point>, depth: usi
     let ns = ds.iter()
         .map(|d| next(p, d))
         .filter(|n| matches!(input.grid.get(n.row, n.column), Some(c) if *c != '#'))
+        .filter(|n| *n != path[depth - 1])
         .collect_vec();
 
     if ns.is_empty() {
         *steps.get_mut(p.row, p.column).unwrap() = 0;
-        return 0
+        return 0;
     }
 
-    let mcs = ns.iter().map(|n|*steps.get(n.row, n.column).unwrap()).max().unwrap();
+    let mcs = ns.iter().map(|n| *steps.get(n.row, n.column).unwrap()).max().unwrap();
 
     if mcs == 0 {
         *steps.get_mut(p.row, p.column).unwrap() = 0;
-        return 0
+        return 0;
     }
 
     let mo = ns.iter()
