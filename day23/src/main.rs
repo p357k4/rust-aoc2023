@@ -98,12 +98,12 @@ fn walk(input: &Input, steps: &mut Array2D<usize>, path: &Vec<Point>, depth: usi
     let nos = ds.iter().map(|d| next(&input.grid, &p, d)).collect_vec();
 
     for n in nos.iter().flatten() {
-        if path.contains(&n) {
+        if path.contains(n) {
             continue
         }
 
         let mut nps = path.clone();
-        nps.insert(0, n.clone());
+        nps.insert(0, *n);
         walk(input, steps, &nps, depth + 1, directions)
     }
 }
