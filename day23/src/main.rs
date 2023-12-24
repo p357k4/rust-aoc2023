@@ -84,6 +84,10 @@ fn walk(input: &Input, steps: &mut Array2D<usize>, path: &Vec<Point>, directions
             return new_path.len() - 1;
         }
 
+        // if *steps.get_mut(p.row, p.column).unwrap() == 0 {
+        //     return 0;
+        // }
+
         let ds = directions(&input.grid, p);
 
         let mut ns = ds.iter()
@@ -93,6 +97,7 @@ fn walk(input: &Input, steps: &mut Array2D<usize>, path: &Vec<Point>, directions
             .collect_vec();
 
         if ns.is_empty() {
+            *steps.get_mut(p.row, p.column).unwrap() = 0;
             break;
         }
 
@@ -112,6 +117,9 @@ fn walk(input: &Input, steps: &mut Array2D<usize>, path: &Vec<Point>, directions
             .max();
 
         let m = mo.unwrap_or_default();
+        if m == 0 {
+            *steps.get_mut(p.row, p.column).unwrap() = 0;
+        }
         return m;
     }
 
