@@ -96,11 +96,6 @@ fn walk(input: &Input, steps: &mut Array2D<usize>, path: &Vec<Point>, directions
             .filter(|n| *n != new_path[new_path.len() - 2])
             .collect_vec();
 
-        if ns.is_empty() {
-            *steps.get_mut(p.row, p.column).unwrap() = 0;
-            break;
-        }
-
         if ns.len() == 1 {
             let n = ns.last().unwrap();
             new_path.push(*n);
@@ -118,7 +113,7 @@ fn walk(input: &Input, steps: &mut Array2D<usize>, path: &Vec<Point>, directions
 
         let m = mo.unwrap_or_default();
         if m == 0 {
-            *steps.get_mut(p.row, p.column).unwrap() = 0;
+            *steps.get_mut(p.row, p.column).unwrap() = m;
         }
         return m;
     }
@@ -161,7 +156,7 @@ fn part2(path: &str) -> Result<usize, Box<dyn std::error::Error>> {
 }
 
 fn directions2(grid: &Array2D<char>, p1: &Point) -> Vec<Direction> {
-    vec![Direction::North, Direction::South, Direction::West, Direction::East]
+    vec![Direction::West, Direction::East, Direction::North, Direction::South]
 }
 
 
