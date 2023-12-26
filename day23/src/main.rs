@@ -68,8 +68,11 @@ fn part1(path: &str) -> Result<usize, Box<dyn std::error::Error>> {
 
     let mut steps = Array2D::filled_by_row_major(|| 1, input.grid.num_rows(), input.grid.num_columns());
 
-    let ps = vec![input.start, Point { row: input.start.row + 1, column: input.start.column }];
-    let result = walk(&input, &mut steps, &ps, &directions);
+    let result = (0..10).map(|_| {
+        let ps = vec![input.start, Point { row: input.start.row + 1, column: input.start.column }];
+        let result = walk(&input, &mut steps, &ps, &directions);
+        result
+    }).max().unwrap();
 
     // let result = steps.get(input.end.row, input.end.column).unwrap() - steps.get(input.start.row, input.start.column).unwrap();
     Ok(result)
@@ -148,12 +151,46 @@ fn part2(path: &str) -> Result<usize, Box<dyn std::error::Error>> {
 
     let mut steps = Array2D::filled_by_row_major(|| 1, input.grid.num_rows(), input.grid.num_columns());
 
-    let ps = vec![input.start, Point { row: input.start.row + 1, column: input.start.column }];
-    let result = walk(&input, &mut steps, &ps, &directions2);
+    let result = (0..10).map(|_| {
+        let ps = vec![input.start, Point { row: input.start.row + 1, column: input.start.column }];
+        let result = walk(&input, &mut steps, &ps, &directions2);
+        result
+    }).max().unwrap();
 
     // let result = steps.get(input.end.row, input.end.column).unwrap() - steps.get(input.start.row, input.start.column).unwrap();
     Ok(result)
 }
+
+fn walk2(input: &Input, steps: &mut Array2D<usize>, path: &Vec<Point>) -> usize {
+    let mut rng = rand::thread_rng();
+
+    let mut new_path = path.clone();
+    loop {
+        let Some(p) = new_path.last() else { todo!() };
+
+        if *p == input.end {
+            return new_path.len() - 1;
+        }
+
+        let ds = directions(&input.grid, p);
+
+        let mut ns = ds.iter()
+            .map(|d| next(p, d))
+            .filter(|n| matches!(input.grid.get(n.row, n.column), Some(c) if *c != '#'))
+            .filter(|n| !new_path.contains(n))
+            .collect_vec();
+
+        if ns.is_empty() {
+            return 0;
+        }
+
+        use rand::seq::SliceRandom;
+
+        let n = ns.choose(&mut rng).unwrap();
+        new_path.push(*n);
+    }
+}
+
 
 fn directions2(grid: &Array2D<char>, p1: &Point) -> Vec<Direction> {
     vec![Direction::West, Direction::East, Direction::North, Direction::South]
