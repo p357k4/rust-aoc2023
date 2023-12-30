@@ -4,7 +4,8 @@ use std::collections::HashMap;
 use std::error::Error;
 use std::fmt::{Debug, Display, Formatter};
 use std::fs::File;
-use std::io::{BufRead, BufReader};
+use std::io;
+use std::io::{BufRead, BufReader, Write};
 use std::ops::Rem;
 use array2d::Array2D;
 use itertools::{Itertools};
@@ -78,12 +79,37 @@ fn part1(path: &str) -> Result<usize, Box<dyn std::error::Error>> {
     Ok(result)
 }
 
+fn print(grid: &Array2D<char>) {
+    for row in 0..grid.num_rows() {
+        print!("-")
+    }
+    println!();
+
+    for row in 0..grid.num_rows() {
+        for column in 0..grid.num_columns() {
+            print!("{}", grid.get(row, column).unwrap())
+        }
+        println!()
+    }
+    io::stdout().flush().unwrap();
+}
+
+fn render(grid: &mut Array2D<char>, path: &Vec<Point>) {
+    for p in path.iter() {
+        *grid.get_mut(p.row, p.column).unwrap() = '*'
+    }
+}
+
 fn walk(input: &Input, steps: &mut Array2D<usize>, path: &Vec<Point>, directions: &impl Fn(&Array2D<char>, &Point) -> Vec<Direction>) -> usize {
     let mut new_path = path.clone();
     loop {
         let Some(p) = new_path.last() else { todo!() };
 
         if *p == input.end {
+            let mut state = input.grid.clone();
+            render(&mut state, &new_path);
+            print(&state);
+
             return new_path.len() - 1;
         }
 
@@ -105,6 +131,10 @@ fn walk(input: &Input, steps: &mut Array2D<usize>, path: &Vec<Point>, directions
             continue;
         }
 
+        let mut state = input.grid.clone();
+        render(&mut state, &new_path);
+        print(&state);
+
         let mo = ns.iter()
             .filter(|n| !new_path.contains(n))
             .map(|n| {
@@ -118,6 +148,7 @@ fn walk(input: &Input, steps: &mut Array2D<usize>, path: &Vec<Point>, directions
         if m == 0 {
             *steps.get_mut(p.row, p.column).unwrap() = m;
         }
+
         return m;
     }
 
