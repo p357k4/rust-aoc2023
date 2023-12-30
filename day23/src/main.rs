@@ -59,9 +59,46 @@ fn load(path: &str) -> Result<Input, Box<dyn Error>> {
         }
     }
 
-    return Ok(Input { grid, start, end });
+    Ok(Input { grid, start, end })
+}
 
-    todo!("we should never be here")
+fn load2(path: &str) -> Result<Input, Box<dyn Error>> {
+    let file = File::open(path)?;
+    let reader = BufReader::new(file);
+
+    let lines = reader.lines()
+        .flatten()
+        .map(|v| v.chars().map(|c| {
+            match c {
+                '>' => '.',
+                '<' => '.',
+                '^' => '.',
+                'v' => '.',
+                _ => c,
+            }
+        }).collect_vec())
+        .collect_vec();
+
+    let grid = Array2D::from_rows(&lines).unwrap();
+
+    let mut start = Point { row: 0, column: 0 };
+    let mut end = Point { row: 0, column: 0 };
+
+    for column in 0..grid.num_columns() {
+        if *grid.get(0, column).unwrap() == '.' {
+            start = Point { row: 0, column };
+            break;
+        }
+    }
+
+    for column in 0..grid.num_columns() {
+        if *grid.get(grid.num_rows() - 1, column).unwrap() == '.' {
+            end = Point { row: grid.num_rows() - 1, column };
+            break;
+        }
+    }
+
+    Ok(Input { grid, start, end })
 }
 
 fn part1(path: &str) -> Result<usize, Box<dyn std::error::Error>> {
@@ -71,7 +108,7 @@ fn part1(path: &str) -> Result<usize, Box<dyn std::error::Error>> {
 
     let result = (0..10).map(|_| {
         let ps = vec![input.start, Point { row: input.start.row + 1, column: input.start.column }];
-        let result = walk(&input, &mut steps, &ps, &directions);
+        let result = walk(&input, &mut steps, &ps);
         result
     }).max().unwrap();
 
@@ -100,7 +137,7 @@ fn render(grid: &mut Array2D<char>, path: &Vec<Point>) {
     }
 }
 
-fn walk(input: &Input, steps: &mut Array2D<usize>, path: &Vec<Point>, directions: &impl Fn(&Array2D<char>, &Point) -> Vec<Direction>) -> usize {
+fn walk(input: &Input, steps: &mut Array2D<usize>, path: &Vec<Point>) -> usize {
     let mut new_path = path.clone();
     loop {
         let Some(p) = new_path.last() else { todo!() };
@@ -140,7 +177,7 @@ fn walk(input: &Input, steps: &mut Array2D<usize>, path: &Vec<Point>, directions
             .map(|n| {
                 let mut nps = new_path.clone();
                 nps.push(*n);
-                walk(input, steps, &nps, directions)
+                walk(input, steps, &nps)
             })
             .max();
 
@@ -178,55 +215,19 @@ fn next(p1: &Point, direction: &Direction) -> Point {
 }
 
 fn part2(path: &str) -> Result<usize, Box<dyn std::error::Error>> {
-    let input = load(path)?;
+    let input = load2(path)?;
 
     let mut steps = Array2D::filled_by_row_major(|| 1, input.grid.num_rows(), input.grid.num_columns());
 
     let result = (0..10).map(|_| {
         let ps = vec![input.start, Point { row: input.start.row + 1, column: input.start.column }];
-        let result = walk(&input, &mut steps, &ps, &directions2);
+        let result = walk(&input, &mut steps, &ps);
         result
     }).max().unwrap();
 
     // let result = steps.get(input.end.row, input.end.column).unwrap() - steps.get(input.start.row, input.start.column).unwrap();
     Ok(result)
 }
-
-fn walk2(input: &Input, steps: &mut Array2D<usize>, path: &Vec<Point>) -> usize {
-    let mut rng = rand::thread_rng();
-
-    let mut new_path = path.clone();
-    loop {
-        let Some(p) = new_path.last() else { todo!() };
-
-        if *p == input.end {
-            return new_path.len() - 1;
-        }
-
-        let ds = directions(&input.grid, p);
-
-        let mut ns = ds.iter()
-            .map(|d| next(p, d))
-            .filter(|n| matches!(input.grid.get(n.row, n.column), Some(c) if *c != '#'))
-            .filter(|n| !new_path.contains(n))
-            .collect_vec();
-
-        if ns.is_empty() {
-            return 0;
-        }
-
-        use rand::seq::SliceRandom;
-
-        let n = ns.choose(&mut rng).unwrap();
-        new_path.push(*n);
-    }
-}
-
-
-fn directions2(grid: &Array2D<char>, p1: &Point) -> Vec<Direction> {
-    vec![Direction::West, Direction::East, Direction::North, Direction::South]
-}
-
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
